@@ -1,0 +1,11 @@
+{
+  "result_id": "RUN-20260610-0001",
+  "status": "success",
+  "image_info": { "width": 512, "height": 256 },
+  "boxes": [
+    { "index": 1, "label": "7", "confidence": 0.94, "x": 12, "y": 35, "width": 24, "height": 40, "status": "normal" },
+    { "index": 2, "label": "A", "confidence": 0.88, "x": 80, "y": 31, "width": 22, "height": 39, "status": "normal" },
+    { "index": 3, "label": "B", "confidence": 0.52, "x": 140, "y": 29, "width": 25, "height": 42, "status": "low_confidence" }
+  ],
+  "llm_comment": "Hệ thống phát hiện 3 ký tự. Cảnh báo: Ký tự 'B' có độ tin cậy thấp (52%), có thể do đứt nét. Gợi ý: Bật closing hoặc tăng nhẹ dilation iterations."
+}
