@@ -1,8 +1,7 @@
 // src/pages/ImageProcess.jsx
 import React, { useState } from 'react';
-import DragDropZone from '../components/Upload/DragDropZone';
-import ImageTabs from '../components/Result/ImageTabs';
-import BoundingBoxTable from '../components/Result/BoundingBoxTable';
+// import DragDropZone from '../components/Upload/DragDropZone';
+// Bỏ comment import DragDropZone khi bạn đã tạo file đó. Tạm thời dùng div mô phỏng bên dưới.
 import { uploadAndProcessImage } from '../services/api';
 
 const PRESETS = [
@@ -20,336 +19,285 @@ const PIPELINE_STEPS = [
 ];
 
 const ImageProcess = () => {
-  const [step, setStep] = useState('UPLOAD');
+  const [step, setStep] = useState('UPLOAD'); // UPLOAD, PROCESSING, RESULT
   const [imageFile, setImageFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
+  
+  // Params state
+  const [selectedPreset, setSelectedPreset] = useState('noisy_light');
+  const [binaryThreshold, setBinaryThreshold] = useState(128);
+  const [minArea, setMinArea] = useState(50);
+  const [padding, setPadding] = useState(4);
+  
+  // Result state
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [resultData, setResultData] = useState(null);
-  const [preset, setPreset] = useState('clean');
-  const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [pipelineStep, setPipelineStep] = useState(0);
-  const [params, setParams] = useState({ threshold_mode: 'otsu', blur_kernel: 3, dilation_iter: 1, min_area: 100 });
+  const [activeTab, setActiveTab] = useState('output'); // output, table, raw
 
-  const handleImageSelect = (file) => {
-    setImageFile(file);
-    setPreviewUrl(URL.createObjectURL(file));
-    setStep('CONFIG');
+  const handleImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+      setStep('UPLOAD');
+      setResultData(null);
+      setError('');
+    }
   };
 
-  const handleStartProcess = async () => {
-    setStep('PROCESSING');
-    setPipelineStep(0);
-    // Simulate step-by-step progress
-    for (let i = 1; i <= 5; i++) {
-      await new Promise((r) => setTimeout(r, 380));
-      setPipelineStep(i);
+  const handlePresetSelect = (presetId) => {
+    setSelectedPreset(presetId);
+    if (presetId === 'clean') { setBinaryThreshold(150); setMinArea(30); setPadding(2); }
+    if (presetId === 'noisy_light') { setBinaryThreshold(128); setMinArea(50); setPadding(4); }
+    if (presetId === 'noisy_heavy') { setBinaryThreshold(100); setMinArea(80); setPadding(6); }
+  };
+
+  const handleProcess = async () => {
+    if (!imageFile) {
+      setError('Vui lòng chọn một ảnh để xử lý.');
+      return;
     }
+
+    setStep('PROCESSING');
+    setLoading(true);
+    setError('');
+
     try {
-      const data = await uploadAndProcessImage(imageFile, { preset, ...params });
+      // Gọi API thực tế
+      // const data = await uploadAndProcessImage(imageFile, { binaryThreshold, minArea, padding });
+      
+      // MÔ PHỎNG DELAY ĐỂ THẤY UI LOADING (Xóa đoạn setTimeout này khi ghép API thật)
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      const data = {
+        success: true,
+        output_image_url: previewUrl, // Dùng tạm ảnh gốc làm ảnh kết quả
+        predictions: [
+          { char: '8', confidence: 0.98, box: { x: 10, y: 15, w: 28, h: 28 } },
+          { char: '3', confidence: 0.85, box: { x: 45, y: 16, w: 28, h: 28 } }
+        ],
+        llm_feedback: "Ảnh có mức độ nhiễu hạt (Salt & Pepper) trung bình. Ký tự '8' nét đứt đã được nối lại qua phép Dilation. Khuyến nghị tăng Min Area lên 60 nếu vẫn còn nhận diện nhầm các cụm nhiễu nhỏ."
+      };
+
       setResultData(data);
       setStep('RESULT');
-    } catch {
-      alert('Có lỗi khi xử lý ảnh. Vui lòng thử lại.');
-      setStep('CONFIG');
+    } catch (err) {
+      setError('Lỗi khi xử lý ảnh. Vui lòng thử lại.');
+      setStep('UPLOAD');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDownload = (type) => {
-    const url = type === 'jpg' ? resultData.output_image_url : '#';
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = type === 'jpg' ? 'output.jpg' : 'output.txt';
-    a.click();
+  const handleReset = () => {
+    setImageFile(null);
+    setPreviewUrl('');
+    setResultData(null);
+    setStep('UPLOAD');
+    setError('');
   };
 
   return (
-    <div className="p-6 lg:p-8 max-w-7xl mx-auto animate-fadeIn">
-      {/* Page header */}
-      {step !== 'RESULT' && (
-        <div className="mb-8">
-          <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: '#2dd4bf' }}>Xử lý ảnh</p>
-          <h1 className="text-2xl font-black text-white">Nhận diện Ký tự Nhiễu</h1>
-          <p className="text-sm mt-1" style={{ color: '#475569' }}>Upload ảnh → Cấu hình → CNN nhận diện → Xuất kết quả</p>
-        </div>
-      )}
+    <div className="flex flex-col gap-8 anim-in">
+      
+      {/* Tiêu đề trang */}
+      <div>
+        <h2 className="page-eyebrow">Workspace</h2>
+        <h1 className="page-title">Xử lý & Nhận diện Kí tự</h1>
+        <p className="page-sub">Tải ảnh lên và tinh chỉnh tham số để nhận diện chữ số nhiễu.</p>
+      </div>
 
-      {/* STEP 1: UPLOAD */}
-      {step === 'UPLOAD' && (
-        <div className="max-w-2xl mx-auto">
-          <div className="rounded-2xl p-6" style={{ background: 'rgba(13,30,60,0.7)', border: '1px solid rgba(56,189,248,0.15)' }}>
-            <div className="flex items-center gap-2 mb-5">
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-black" style={{ background: 'rgba(56,189,248,0.12)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.2)' }}>1</div>
-              <h2 className="font-bold text-slate-200">Chọn ảnh đầu vào</h2>
-            </div>
-            <DragDropZone onImageSelect={handleImageSelect} />
-
-            <div className="mt-5 grid grid-cols-3 gap-3">
-              {[
-                { icon: '🖤', title: 'Chữ đen nền trắng', ok: true },
-                { icon: '📐', title: 'Kích thước đủ lớn', ok: true },
-                { icon: '🎨', title: 'Ảnh màu phức tạp', ok: false },
-              ].map((h, i) => (
-                <div key={i} className="p-3 rounded-xl text-center" style={{ background: 'rgba(7,21,38,0.5)', border: `1px solid ${h.ok ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)'}` }}>
-                  <p className="text-lg mb-1">{h.icon}</p>
-                  <p className="text-[11px] font-semibold" style={{ color: h.ok ? '#86efac' : '#fca5a5' }}>
-                    {h.ok ? '✓' : '✗'} {h.title}
-                  </p>
+      {/* Main Layout 2 Cột */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        {/* ================= CỘT TRÁI (5 phần): UPLOAD & PARAMS ================= */}
+        <div className="lg:col-span-5 flex flex-col gap-6">
+          
+          {/* Card Upload */}
+          <div className="card">
+            <h3 className="card-title">1. Tải ảnh đầu vào</h3>
+            <p className="card-sub mb-4">Hỗ trợ JPG, PNG. Tối đa 5MB.</p>
+            
+            <div className="relative w-full h-48 border-2 border-dashed border-sky-500/30 rounded-xl flex flex-col items-center justify-center bg-[rgba(56,189,248,0.03)] hover:bg-[rgba(56,189,248,0.08)] transition-all cursor-pointer overflow-hidden group">
+              {previewUrl ? (
+                <img src={previewUrl} alt="Preview" className="w-full h-full object-contain p-2" />
+              ) : (
+                <div className="text-center">
+                  <div className="text-4xl mb-2 group-hover:scale-110 transition-transform">📤</div>
+                  <span className="text-teal font-bold text-sm">Nhấp hoặc Kéo thả ảnh vào đây</span>
                 </div>
-              ))}
+              )}
+              <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleImageSelect} accept="image/png, image/jpeg" />
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* STEP 2: CONFIG */}
-      {step === 'CONFIG' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Preview */}
-          <div className="rounded-2xl p-5" style={{ background: 'rgba(13,30,60,0.7)', border: '1px solid rgba(56,189,248,0.15)' }}>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-black" style={{ background: 'rgba(56,189,248,0.12)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.2)' }}>1</div>
-              <h2 className="font-bold text-slate-200 text-sm">Ảnh đầu vào</h2>
-            </div>
-            <div className="rounded-xl overflow-hidden flex items-center justify-center" style={{ background: '#040d1a', border: '1px solid rgba(56,189,248,0.08)', minHeight: '180px' }}>
-              <img src={previewUrl} alt="Preview" className="max-w-full max-h-64 object-contain" />
-            </div>
-            <div className="mt-3 flex items-center gap-2">
-              <svg className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#38bdf8' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-              <p className="text-xs truncate" style={{ color: '#64748b' }}>{imageFile?.name} · {(imageFile?.size / 1024).toFixed(0)} KB</p>
-            </div>
-            <button
-              onClick={() => setStep('UPLOAD')}
-              className="mt-3 w-full text-xs font-semibold py-2 rounded-lg transition-all hover:text-slate-300"
-              style={{ color: '#475569' }}
-            >
-              ← Chọn ảnh khác
-            </button>
+            
+            {error && <p className="text-red-400 text-sm mt-3 font-medium bg-red-400/10 p-2 rounded-lg border border-red-400/20">{error}</p>}
           </div>
 
-          {/* Config panel */}
-          <div className="rounded-2xl p-5 flex flex-col gap-5" style={{ background: 'rgba(13,30,60,0.7)', border: '1px solid rgba(56,189,248,0.15)' }}>
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-black" style={{ background: 'rgba(56,189,248,0.12)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.2)' }}>2</div>
-              <h2 className="font-bold text-slate-200 text-sm">Cấu hình tham số</h2>
+          {/* Card Cấu Hình */}
+          <div className="card">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="card-title">2. Cấu hình Tham số</h3>
+              <span className="badge badge-blue">OpenCV</span>
             </div>
 
-            {/* Preset */}
-            <div>
-              <label className="text-xs font-bold uppercase tracking-wider mb-3 block" style={{ color: '#64748b' }}>Chế độ xử lý nhiễu</label>
+            {/* Presets */}
+            <div className="mb-6">
+              <label className="form-label">Chọn Mẫu nhanh (Presets)</label>
               <div className="grid grid-cols-3 gap-2">
-                {PRESETS.map((p) => (
-                  <button
+                {PRESETS.map(p => (
+                  <button 
                     key={p.id}
-                    onClick={() => setPreset(p.id)}
-                    className="p-3 rounded-xl text-center transition-all duration-200"
-                    style={{
-                      background: preset === p.id ? 'rgba(13,148,136,0.15)' : 'rgba(7,21,38,0.5)',
-                      border: `1px solid ${preset === p.id ? 'rgba(45,212,191,0.4)' : 'rgba(56,189,248,0.1)'}`,
-                    }}
+                    onClick={() => handlePresetSelect(p.id)}
+                    className={`btn btn-sm flex-col py-3 h-auto gap-1 ${selectedPreset === p.id ? 'btn-primary' : 'btn-secondary'}`}
                   >
-                    <span className="text-xl block mb-1">{p.icon}</span>
-                    <p className="text-[11px] font-bold" style={{ color: preset === p.id ? '#2dd4bf' : '#e2e8f0' }}>{p.label}</p>
-                    <p className="text-[10px] mt-0.5" style={{ color: '#475569' }}>{p.desc}</p>
+                    <span className="text-lg">{p.icon}</span>
+                    <span className="text-xs">{p.label}</span>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Advanced toggle */}
-            <button
-              onClick={() => setAdvancedOpen(!advancedOpen)}
-              className="flex items-center justify-between w-full text-xs font-semibold px-4 py-2.5 rounded-xl transition-all"
-              style={{ background: 'rgba(56,189,248,0.06)', color: '#64748b', border: '1px solid rgba(56,189,248,0.1)' }}
-            >
-              <span>Tham số nâng cao</span>
-              <svg
-                className="w-4 h-4 transition-transform"
-                style={{ transform: advancedOpen ? 'rotate(180deg)' : 'rotate(0deg)', color: '#38bdf8' }}
-                fill="none" stroke="currentColor" viewBox="0 0 24 24"
-              ><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-            </button>
+            <div className="divider"></div>
 
-            {advancedOpen && (
-              <div className="grid grid-cols-2 gap-3 animate-fadeIn">
-                {[
-                  { key: 'threshold_mode', label: 'Threshold Mode', type: 'select', opts: [['otsu','Otsu'],['adaptive','Adaptive'],['global','Global']] },
-                  { key: 'blur_kernel', label: 'Blur Kernel', type: 'number', min: 1, max: 9, step: 2 },
-                  { key: 'dilation_iter', label: 'Dilation Iter', type: 'number', min: 0, max: 5, step: 1 },
-                  { key: 'min_area', label: 'Min Area (px²)', type: 'number', min: 10, max: 1000, step: 10 },
-                ].map(({ key, label, type, opts, ...rest }) => (
-                  <div key={key}>
-                    <label className="text-[11px] font-bold block mb-1.5" style={{ color: '#64748b' }}>{label}</label>
-                    {type === 'select' ? (
-                      <select
-                        value={params[key]}
-                        onChange={(e) => setParams({ ...params, [key]: e.target.value })}
-                        className="w-full py-2 px-3 text-xs font-medium rounded-lg outline-none"
-                        style={{ background: 'rgba(7,21,38,0.8)', color: '#e2e8f0', border: '1px solid rgba(56,189,248,0.2)' }}
-                      >
-                        {opts.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                      </select>
-                    ) : (
-                      <input
-                        type="number"
-                        value={params[key]}
-                        onChange={(e) => setParams({ ...params, [key]: Number(e.target.value) })}
-                        className="w-full py-2 px-3 text-xs font-medium rounded-lg outline-none"
-                        style={{ background: 'rgba(7,21,38,0.8)', color: '#e2e8f0', border: '1px solid rgba(56,189,248,0.2)' }}
-                        {...rest}
-                      />
-                    )}
+            {/* Params Sliders */}
+            <div className="flex flex-col gap-5">
+              <div>
+                <label className="form-label">Binary Threshold ({binaryThreshold})</label>
+                <input type="range" className="w-full accent-teal-500" min="0" max="255" value={binaryThreshold} onChange={(e) => setBinaryThreshold(e.target.value)} />
+                <div className="flex justify-between text-xs text-muted mt-1"><span>0 (Đen)</span><span>255 (Trắng)</span></div>
+              </div>
+
+              <div>
+                <label className="form-label">Min Area Lọc nhiễu ({minArea}px)</label>
+                <input type="range" className="w-full accent-sky-500" min="10" max="200" value={minArea} onChange={(e) => setMinArea(e.target.value)} />
+              </div>
+
+              <div>
+                <label className="form-label">Padding (Viền ký tự)</label>
+                <select className="form-select" value={padding} onChange={(e) => setPadding(e.target.value)}>
+                  <option value="0">Sát viền (0px)</option>
+                  <option value="2">Hẹp (2px)</option>
+                  <option value="4">Tiêu chuẩn (4px)</option>
+                  <option value="6">Rộng (6px)</option>
+                </select>
+              </div>
+            </div>
+
+            <button 
+              onClick={handleProcess} 
+              disabled={loading || !imageFile}
+              className={`btn btn-lg w-full mt-6 ${loading ? 'opacity-70 cursor-not-allowed bg-slate-700' : 'btn-primary'}`}
+            >
+              {loading ? <span className="spin">⏳ Đang xử lý...</span> : '⚡ Chạy Pipeline Xử lý'}
+            </button>
+          </div>
+        </div>
+
+        {/* ================= CỘT PHẢI (7 phần): TRẠNG THÁI & KẾT QUẢ ================= */}
+        <div className="lg:col-span-7 flex flex-col gap-6">
+          
+          {step === 'UPLOAD' && (
+            <div className="card h-full flex flex-col items-center justify-center text-center opacity-70 min-h-[400px]">
+              <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center text-3xl mb-4 border border-slate-700">🖼️</div>
+              <h3 className="text-lg font-bold text-slate-300">Chưa có dữ liệu xử lý</h3>
+              <p className="text-sm text-slate-500 mt-2 max-w-sm">Hãy tải ảnh lên và nhấn "Chạy Pipeline Xử lý" bên cột trái để xem kết quả nhận diện, bounding box và nhận xét từ AI.</p>
+            </div>
+          )}
+
+          {step === 'PROCESSING' && (
+            <div className="card card-glow h-full min-h-[400px] flex flex-col justify-center">
+              <h3 className="card-title text-center text-teal mb-8">Đang chạy thuật toán...</h3>
+              <div className="flex flex-col gap-4 max-w-md mx-auto w-full">
+                {PIPELINE_STEPS.map((s, i) => (
+                  <div key={s.id} className="flex items-center gap-4 bg-[rgba(5,15,30,0.5)] p-3 rounded-lg border border-sky-500/10 anim-in" style={{ animationDelay: `${i * 0.2}s` }}>
+                    <div className="w-8 h-8 rounded-full bg-teal-500/20 text-teal flex items-center justify-center font-bold text-sm border border-teal-500/30">
+                      {s.id}
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm text-slate-200">{s.label}</div>
+                      <div className="text-xs text-slate-500">{s.sub}</div>
+                    </div>
+                    {/* Giả lập trạng thái load từng bước */}
+                    <div className="ml-auto text-teal spin">⏳</div>
                   </div>
                 ))}
               </div>
-            )}
-
-            <button
-              onClick={handleStartProcess}
-              className="w-full py-3.5 rounded-xl font-black text-sm transition-all hover:scale-[1.01] active:scale-95 flex items-center justify-center gap-2"
-              style={{ background: 'linear-gradient(90deg, #0d3d6b, #0d9488)', color: 'white', boxShadow: '0 6px 20px rgba(13,148,136,0.35)' }}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              Tiến hành Nhận diện
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* STEP 3: PROCESSING */}
-      {step === 'PROCESSING' && (
-        <div className="flex flex-col items-center justify-center py-16">
-          <div className="relative w-24 h-24 mb-8">
-            <div className="absolute inset-0 rounded-full" style={{ border: '3px solid rgba(56,189,248,0.1)' }} />
-            <div className="absolute inset-0 rounded-full animate-spin" style={{ border: '3px solid transparent', borderTopColor: '#38bdf8' }} />
-            <div className="absolute inset-3 rounded-full animate-spin" style={{ border: '2px solid transparent', borderTopColor: '#2dd4bf', animationDirection: 'reverse', animationDuration: '0.7s' }} />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <svg className="w-7 h-7" style={{ color: '#0d9488' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18" />
-              </svg>
             </div>
-          </div>
+          )}
 
-          <h2 className="text-xl font-black text-white mb-2">Đang chạy Pipeline...</h2>
-          <p className="text-sm mb-10" style={{ color: '#475569' }}>OpenCV đang xử lý — CNN đang dự đoán ký tự</p>
-
-          <div className="w-full max-w-sm space-y-2">
-            {PIPELINE_STEPS.map((s) => (
-              <div
-                key={s.id}
-                className="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-500"
-                style={{
-                  background: pipelineStep >= s.id ? 'rgba(13,148,136,0.12)' : 'rgba(13,30,60,0.4)',
-                  border: `1px solid ${pipelineStep >= s.id ? 'rgba(45,212,191,0.3)' : 'rgba(56,189,248,0.08)'}`,
-                  opacity: pipelineStep >= s.id || pipelineStep === s.id - 1 ? 1 : 0.4,
-                }}
-              >
-                <div
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0"
-                  style={{
-                    background: pipelineStep >= s.id ? '#0d9488' : 'rgba(56,189,248,0.08)',
-                    color: pipelineStep >= s.id ? 'white' : '#334155',
-                  }}
-                >
-                  {pipelineStep >= s.id ? '✓' : s.id}
-                </div>
-                <div>
-                  <p className="text-xs font-bold" style={{ color: pipelineStep >= s.id ? '#2dd4bf' : '#64748b' }}>{s.label}</p>
-                  <p className="text-[10px]" style={{ color: '#334155' }}>{s.sub}</p>
-                </div>
-                {pipelineStep === s.id - 1 && (
-                  <div className="ml-auto w-3 h-3 rounded-full animate-pulse" style={{ background: '#38bdf8' }} />
-                )}
+          {step === 'RESULT' && resultData && (
+            <div className="card card-glow anim-in">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="card-title text-teal">Kết quả phân tích</h3>
+                <button onClick={handleReset} className="btn btn-sm btn-ghost text-xs">↻ Xử lý ảnh mới</button>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* STEP 4: RESULT */}
-      {step === 'RESULT' && resultData && (
-        <div className="space-y-5 animate-fadeIn">
-          {/* Result header */}
-          <div
-            className="rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative overflow-hidden"
-            style={{ background: 'linear-gradient(120deg, #0a2244, #0d3d6b 50%, #083d38 100%)', border: '1px solid rgba(56,189,248,0.2)' }}
-          >
-            <div>
-              <span className="text-[11px] font-bold uppercase tracking-widest px-3 py-1 rounded-full" style={{ background: 'rgba(45,212,191,0.15)', color: '#2dd4bf', border: '1px solid rgba(45,212,191,0.25)' }}>
-                {resultData.result_id}
-              </span>
-              <h2 className="text-xl font-black text-white mt-2">Phân tích hoàn tất!</h2>
-              <p className="text-xs mt-1" style={{ color: '#475569' }}>{resultData.filename} · {resultData.processing_time_ms}ms</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => handleDownload('jpg')}
-                className="flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl transition-all hover:scale-105"
-                style={{ background: 'rgba(56,189,248,0.12)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.25)' }}
-              >
-                ↓ output.jpg
-              </button>
-              <button
-                onClick={() => handleDownload('txt')}
-                className="flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl transition-all hover:scale-105"
-                style={{ background: 'rgba(56,189,248,0.12)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.25)' }}
-              >
-                ↓ output.txt
-              </button>
-              <button
-                onClick={() => setStep('UPLOAD')}
-                className="flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl transition-all hover:scale-105"
-                style={{ background: 'rgba(13,148,136,0.2)', color: '#2dd4bf', border: '1px solid rgba(45,212,191,0.3)' }}
-              >
-                + Phân tích ảnh mới
-              </button>
-            </div>
-            <div className="absolute -right-10 -top-10 w-32 h-32 rounded-full opacity-10" style={{ background: 'radial-gradient(circle, #2dd4bf, transparent)' }} />
-          </div>
-
-          {/* Stats row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { label: 'Ký tự tìm thấy', value: resultData.statistics.detected_boxes, color: '#38bdf8' },
-              { label: 'Avg Confidence', value: `${(resultData.statistics.average_confidence * 100).toFixed(0)}%`, color: '#2dd4bf' },
-              { label: 'Nhiễu loại bỏ', value: resultData.statistics.removed_components, color: '#818cf8' },
-              { label: 'Thời gian xử lý', value: `${resultData.processing_time_ms}ms`, color: '#fde047' },
-            ].map((s) => (
-              <div key={s.label} className="rounded-xl p-4 text-center" style={{ background: 'rgba(13,30,60,0.6)', border: '1px solid rgba(56,189,248,0.1)' }}>
-                <p className="text-2xl font-black" style={{ color: s.color }}>{s.value}</p>
-                <p className="text-[11px] mt-1" style={{ color: '#475569' }}>{s.label}</p>
+              
+              {/* Nút Tabs */}
+              <div className="flex gap-2 border-b border-sky-500/20 pb-4 mb-6">
+                <button onClick={() => setActiveTab('output')} className={`btn btn-sm ${activeTab === 'output' ? 'btn-primary' : 'btn-ghost'}`}>🖼️ Ảnh Bounding Box</button>
+                <button onClick={() => setActiveTab('table')} className={`btn btn-sm ${activeTab === 'table' ? 'btn-primary' : 'btn-ghost'}`}>📊 Bảng Tọa độ</button>
+                <button className="btn btn-sm btn-ghost ml-auto text-sky hover:text-white">⬇️ Tải Output.txt</button>
               </div>
-            ))}
-          </div>
 
-          {/* Main result grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <div className="space-y-5">
-              {/* Output image */}
-              <div className="rounded-2xl p-5" style={{ background: 'rgba(13,30,60,0.7)', border: '1px solid rgba(56,189,248,0.15)' }}>
-                <h3 className="font-bold text-slate-200 text-sm mb-4">Ảnh kết quả (Bounding Box)</h3>
-                <div className="rounded-xl overflow-hidden flex items-center justify-center" style={{ background: '#040d1a', border: '1px solid rgba(56,189,248,0.08)', minHeight: '160px' }}>
-                  <img src={resultData.output_image_url} alt="Output" className="w-full h-auto object-contain" />
-                </div>
-                {/* LLM comment */}
-                <div className="mt-4 p-4 rounded-xl" style={{ background: 'rgba(13,148,136,0.08)', border: '1px solid rgba(45,212,191,0.15)' }}>
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <svg className="w-3.5 h-3.5" style={{ color: '#2dd4bf' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                    <span className="text-[11px] font-black uppercase tracking-wider" style={{ color: '#2dd4bf' }}>Trợ lý AI nhận xét</span>
+              {/* Nội dung Tab Ảnh */}
+              {activeTab === 'output' && (
+                <div className="flex flex-col gap-4">
+                  <div className="bg-[#040d1a] border border-sky-500/20 rounded-xl overflow-hidden flex items-center justify-center min-h-[250px] p-2">
+                    <img src={resultData.output_image_url} alt="Output" className="w-full max-h-[400px] object-contain rounded-lg" />
                   </div>
-                  <p className="text-xs leading-relaxed" style={{ color: '#94a3b8' }}>{resultData.llm_comment}</p>
+                  
+                  {/* LLM Feedback Block */}
+                  <div className="bg-[rgba(13,148,136,0.1)] border border-[rgba(45,212,191,0.25)] rounded-xl p-5 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1 h-full bg-teal-500"></div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-teal font-black text-lg">✨ AI Assistant</span>
+                    </div>
+                    <p className="text-sm text-slate-300 leading-relaxed">{resultData.llm_feedback}</p>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <ImageTabs />
+              {/* Nội dung Tab Bảng */}
+              {activeTab === 'table' && (
+                <div className="overflow-x-auto rounded-xl border border-sky-500/20">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Nhãn (Dự đoán)</th>
+                        <th>Độ tin cậy</th>
+                        <th>Tọa độ (X, Y, W, H)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {resultData.predictions?.map((pred, idx) => (
+                        <tr key={idx}>
+                          <td><span className="badge badge-teal text-sm px-3">{pred.char}</span></td>
+                          <td>
+                            <div className="flex items-center gap-2">
+                              <div className="w-16 h-2 bg-slate-700 rounded-full overflow-hidden">
+                                <div className="h-full bg-teal-500" style={{ width: `${pred.confidence * 100}%` }}></div>
+                              </div>
+                              <span className="text-sm">{(pred.confidence * 100).toFixed(1)}%</span>
+                            </div>
+                          </td>
+                          <td className="text-sm font-mono text-sky">
+                            [{pred.box.x}, {pred.box.y}, {pred.box.w}, {pred.box.h}]
+                          </td>
+                        </tr>
+                      ))}
+                      {(!resultData.predictions || resultData.predictions.length === 0) && (
+                        <tr><td colSpan="3" className="text-center py-6 text-slate-500">Không tìm thấy ký tự nào.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
             </div>
+          )}
 
-            <BoundingBoxTable boxes={resultData.boxes} />
-          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
