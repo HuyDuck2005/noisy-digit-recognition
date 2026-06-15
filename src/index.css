@@ -103,7 +103,7 @@ body {
 }
 
 /* ===================== PAGE CONTAINER ===================== */
-.page-wrap { padding: 40px 48px; max-width: 1400px; margin: 0 auto; }
+.page-wrap { padding: 40px 48px; width: 100%; max-width: 100%; box-sizing: border-box; }
 .page-eyebrow {  
   font-size: 13px; font-weight: 800; letter-spacing: 2px;  
   text-transform: uppercase; color: #2dd4bf; margin-bottom: 8px;
@@ -226,3 +226,43 @@ body {
 .text-lg { font-size: 20px; } 
 .text-xl { font-size: 24px; } 
 .text-2xl { font-size: 28px; }
+/* ===================== MISSING UTILITY CLASSES (FIX) ===================== */
+
+/* Animation */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.anim-in { animation: fadeIn 0.35s ease both; }
+.animate-fadeIn { animation: fadeIn 0.35s ease both; }
+
+/* Spin */
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.spin { display: inline-block; animation: spin 1s linear infinite; }
+
+/* Color utilities */
+.text-teal  { color: #2dd4bf; }
+.text-sky   { color: #38bdf8; }
+.text-muted { color: #64748b; }
+
+/* Divider */
+.divider { border: none; border-top: 1px solid rgba(56,189,248,0.12); margin: 12px 0; }
+
+/* Button sizes */
+.btn-sm  { padding: 8px 16px;  font-size: 13px; border-radius: 10px; }
+.btn-lg  { padding: 16px 32px; font-size: 16px; border-radius: 14px; }
+.btn-ghost { background: transparent; color: #94a3b8; border: 1.5px solid rgba(56,189,248,0.15); }
+.btn-ghost:hover { background: rgba(56,189,248,0.08); color: #f8fafc; }
+
+/* Badges */
+.badge-teal { background: rgba(45,212,191,0.15); color: #2dd4bf; border: 1px solid rgba(45,212,191,0.3); }
+.badge-sky  { background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); }
+.badge-red  { background: rgba(239,68,68,0.15);  color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+.badge-blue { background: rgba(99,102,241,0.15); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.3); }
+
+/* Header live dot */
+.header-live-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #2dd4bf;
+  box-shadow: 0 0 6px #2dd4bf;
+  animation: pulse 2s ease infinite;
+  flex-shrink: 0;
+}
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
