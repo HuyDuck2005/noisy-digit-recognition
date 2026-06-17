@@ -18,40 +18,66 @@ const Login = () => {
   };
 
   return (
-    <div className="card p-8 shadow-2xl border-sky-500/30 border-2">
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-[#0d3d6b] to-[#0d9488] mb-4 shadow-lg shadow-teal-500/30">
-          <span className="text-2xl font-black text-white">ND</span>
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#040d1a] p-4">
+      {/* Hiệu ứng ánh sáng nền */}
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-600/20 rounded-full blur-[100px] pointer-events-none"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-[100px] pointer-events-none"></div>
+
+      {/* Glassmorphism Card - Thu hẹp ngang & Bo tròn sâu */}
+      <div className="relative z-10 w-full max-w-[380px] p-8 sm:p-10 rounded-[2rem] bg-white/[0.03] backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/50">
+        
+        <div className="text-center mb-8">
+          {/* Logo bo tròn hoàn toàn */}
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 mb-5 shadow-[0_0_20px_rgba(6,182,212,0.4)]">
+            <span className="text-3xl font-black text-white tracking-wider">ND</span>
+          </div>
+          {/* Chữ to, ngắn gọn hơn */}
+          <h2 className="text-3xl font-bold text-white tracking-wide mb-1">Đăng nhập</h2>
+          <p className="text-cyan-400/80 text-base font-medium">Noisy Digits AI</p>
         </div>
-        <h2 className="text-2xl font-bold text-white">Đăng nhập hệ thống</h2>
-        <p className="text-slate-400 text-sm mt-2">Nhận diện kí tự nhiễu (Noisy Digits)</p>
+
+        <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
+          <div>
+            <label className="block text-base font-medium text-slate-300 mb-2">Email</label>
+            <input 
+              type="text" 
+              className="w-full bg-[#071526]/50 border border-white/10 rounded-2xl px-5 py-4 text-white text-base placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all" 
+              placeholder="admin@noisydigits.com"
+              value={email} 
+              onChange={e => setEmail(e.target.value)} 
+            />
+          </div>
+          <div>
+            <label className="block text-base font-medium text-slate-300 mb-2">Mật khẩu</label>
+            <input 
+              type="password" 
+              className="w-full bg-[#071526]/50 border border-white/10 rounded-2xl px-5 py-4 text-white text-base placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all" 
+              placeholder="••••••••"
+              value={password} 
+              onChange={e => setPassword(e.target.value)} 
+            />
+          </div>
+
+          {error && (
+            <p className="text-red-400 text-base bg-red-400/10 border border-red-400/20 rounded-2xl px-5 py-3 flex items-center gap-2">
+              <span>⚠️</span> {error}
+            </p>
+          )}
+
+          {/* Button bo tròn, chữ to hơn */}
+          <button 
+            type="submit" 
+            className="w-full mt-3 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold text-lg hover:from-cyan-400 hover:to-blue-500 focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-[#040d1a] transition-all shadow-lg shadow-cyan-500/25"
+          >
+            Đăng nhập ngay
+          </button>
+        </form>
+
+        <p className="text-center text-base text-slate-400 mt-8">
+          Chưa có tài khoản?{' '}
+          <Link to="/register" className="text-cyan-400 font-semibold hover:text-cyan-300 hover:underline transition-colors">Đăng ký</Link>
+        </p>
       </div>
-
-      <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-        <div>
-          <label className="form-label">Email</label>
-          <input type="text" className="form-input" placeholder="admin@noisydigits.com"
-            value={email} onChange={e => setEmail(e.target.value)} />
-        </div>
-        <div>
-          <label className="form-label">Mật khẩu</label>
-          <input type="password" className="form-input" placeholder="••••••••"
-            value={password} onChange={e => setPassword(e.target.value)} />
-        </div>
-
-        {error && (
-          <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">{error}</p>
-        )}
-
-        <button type="submit" className="btn btn-primary w-full mt-2 py-3">
-          Đăng nhập ngay
-        </button>
-      </form>
-
-      <p className="text-center text-sm text-slate-500 mt-6">
-        Chưa có tài khoản?{' '}
-        <Link to="/register" className="text-teal font-bold hover:underline">Đăng ký</Link>
-      </p>
     </div>
   );
 };
