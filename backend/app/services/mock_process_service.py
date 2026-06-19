@@ -6,12 +6,16 @@ from fastapi import HTTPException, UploadFile, status
 
 from app.schemas.process import (
     BoundingBoxResult,
+    DebugLinks,
     ImageInfo,
     PipelineImages,
     ProcessResult,
     ProcessStatistics,
 )
-from app.services.image_processing_service import decode_uploaded_image
+from app.services.image_processing_service import (
+    decode_uploaded_image,
+    save_initial_pipeline_images,
+)
 
 
 MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024
@@ -33,17 +37,19 @@ def create_mock_process_result(
     upload: UploadFile,
     content: bytes,
     parameters: dict[str, Any],
+    base_url: str,
 ) -> ProcessResult:
     validate_image_upload(upload)
     decoded_image = decode_uploaded_image(content)
 
     created_at = datetime.now(UTC)
     result_id = f"RUN-{created_at:%Y%m%d}-{uuid4().hex[:8].upper()}"
+    pipeline_images = save_initial_pipeline_images(result_id, decoded_image, base_url)
     boxes = build_mock_boxes(result_id)
     low_confidence_count = sum(1 for box in boxes if box.confidence < 0.6)
 
     merged_parameters = DEFAULT_PARAMETERS | parameters
-    output_image_url = f"/api/result-image/{result_id}"
+    output_image_url = pipeline_images.original_url
 
     return ProcessResult(
         result_id=result_id,
@@ -71,17 +77,24 @@ def create_mock_process_result(
         ),
         boxes=boxes,
         pipeline_images=PipelineImages(
-            original_url=f"/api/images/original/{result_id}",
+            original_url=pipeline_images.original_url,
+            grayscale_url=pipeline_images.grayscale_url,
             output_url=output_image_url,
         ),
         output_image_url=output_image_url,
-        output_txt_url=f"/api/output-txt/{result_id}",
+        output_txt_url=f"{base_url}/api/output-txt/{result_id}",
         llm_comment=(
             "Backend received and decoded the uploaded image with OpenCV. "
+            "The original and grayscale pipeline images were saved for review. "
             "Bounding boxes and predictions are still mock data and will be "
             "replaced by the image-processing pipeline in the next step."
         ),
         model_version="mock-cnn-v0",
+        debug_links=DebugLinks(
+            original_image=pipeline_images.original_url,
+            grayscale_image=pipeline_images.grayscale_url,
+            output_preview=output_image_url,
+        ),
     )
 
 

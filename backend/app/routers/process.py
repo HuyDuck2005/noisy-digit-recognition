@@ -1,7 +1,7 @@
 import json
 from typing import Any
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile, status
 
 from app.schemas.process import ProcessResult
 from app.services.mock_process_service import (
@@ -15,6 +15,7 @@ router = APIRouter()
 
 @router.post("/process", response_model=ProcessResult)
 async def process_image(
+    request: Request,
     image: UploadFile | None = File(default=None),
     file: UploadFile | None = File(default=None),
     parameters: str | None = Form(default=None),
@@ -41,7 +42,8 @@ async def process_image(
             detail="Uploaded image exceeds the 10MB limit.",
         )
 
-    return create_mock_process_result(upload, content, parsed_parameters)
+    base_url = str(request.base_url).rstrip("/")
+    return create_mock_process_result(upload, content, parsed_parameters, base_url)
 
 
 def parse_parameters(parameters: str | None) -> dict[str, Any]:

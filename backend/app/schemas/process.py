@@ -45,6 +45,12 @@ class PipelineImages(BaseModel):
     output_url: str | None = None
 
 
+class DebugLinks(BaseModel):
+    original_image: str
+    grayscale_image: str
+    output_preview: str
+
+
 class ProcessResult(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
 
@@ -63,3 +69,4 @@ class ProcessResult(BaseModel):
     output_txt_url: str
     llm_comment: str | None = None
     model_version: str | None = None
+    debug_links: DebugLinks | None = None

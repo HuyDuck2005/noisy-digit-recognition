@@ -58,8 +58,9 @@ Expected response:
 ## Mock Image Processing
 
 The first backend demo endpoint accepts an uploaded image, decodes it with
-OpenCV, and returns a mock `ProcessResult` shaped for the frontend/spec.
-Bounding boxes and predictions are still placeholder data.
+OpenCV, saves the original and grayscale pipeline images, and returns a mock
+`ProcessResult` shaped for the frontend/spec. Bounding boxes and predictions are
+still placeholder data.
 
 ```text
 POST http://127.0.0.1:8000/api/process
@@ -86,3 +87,18 @@ curl.exe -X POST "http://127.0.0.1:8000/api/process" `
   -F "image=@C:\path\to\sample.png" `
   -F "parameters=$params"
 ```
+
+The response includes absolute pipeline image URLs that can be opened in the
+browser:
+
+```text
+GET /api/images/original/{result_id}
+GET /api/images/grayscale/{result_id}
+```
+
+At this stage, `output_image_url` points to the saved original image as a
+temporary preview. A real bounding-box output image will be added after box
+detection is implemented.
+
+For quick manual testing, the response also includes `debug_links` with full
+URLs for the saved original and grayscale images.
