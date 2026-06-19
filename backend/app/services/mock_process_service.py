@@ -79,13 +79,15 @@ def create_mock_process_result(
         pipeline_images=PipelineImages(
             original_url=pipeline_images.original_url,
             grayscale_url=pipeline_images.grayscale_url,
+            binary_url=pipeline_images.binary_url,
             output_url=output_image_url,
         ),
         output_image_url=output_image_url,
         output_txt_url=f"{base_url}/api/output-txt/{result_id}",
         llm_comment=(
             "Backend received and decoded the uploaded image with OpenCV. "
-            "The original and grayscale pipeline images were saved for review. "
+            "The original, grayscale, and binary pipeline images were saved "
+            "for review. "
             "Bounding boxes and predictions are still mock data and will be "
             "replaced by the image-processing pipeline in the next step."
         ),
@@ -93,6 +95,7 @@ def create_mock_process_result(
         debug_links=DebugLinks(
             original_image=pipeline_images.original_url,
             grayscale_image=pipeline_images.grayscale_url,
+            binary_image=pipeline_images.binary_url,
             output_preview=output_image_url,
         ),
     )

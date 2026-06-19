@@ -48,6 +48,7 @@ class PipelineImages(BaseModel):
 class DebugLinks(BaseModel):
     original_image: str
     grayscale_image: str
+    binary_image: str
     output_preview: str
 
 

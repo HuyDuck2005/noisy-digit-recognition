@@ -12,6 +12,7 @@ RESULTS_ROOT = BACKEND_ROOT / "storage" / "results"
 PIPELINE_IMAGE_FILENAMES = {
     "original": "original.png",
     "grayscale": "grayscale.png",
+    "binary": "binary.png",
 }
 
 
@@ -48,6 +49,7 @@ def decode_uploaded_image(content: bytes) -> DecodedImage:
 class InitialPipelineImages:
     original_url: str
     grayscale_url: str
+    binary_url: str
 
 
 def save_initial_pipeline_images(
@@ -60,15 +62,24 @@ def save_initial_pipeline_images(
 
     original_path = result_dir / PIPELINE_IMAGE_FILENAMES["original"]
     grayscale_path = result_dir / PIPELINE_IMAGE_FILENAMES["grayscale"]
+    binary_path = result_dir / PIPELINE_IMAGE_FILENAMES["binary"]
 
     grayscale_image = cv2.cvtColor(decoded_image.image, cv2.COLOR_BGR2GRAY)
+    _, binary_image = cv2.threshold(
+        grayscale_image,
+        0,
+        255,
+        cv2.THRESH_BINARY | cv2.THRESH_OTSU,
+    )
 
     write_png_image(original_path, decoded_image.image, "original")
     write_png_image(grayscale_path, grayscale_image, "grayscale")
+    write_png_image(binary_path, binary_image, "binary")
 
     return InitialPipelineImages(
         original_url=f"{base_url}/api/images/original/{result_id}",
         grayscale_url=f"{base_url}/api/images/grayscale/{result_id}",
+        binary_url=f"{base_url}/api/images/binary/{result_id}",
     )
 
 
