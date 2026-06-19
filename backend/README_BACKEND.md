@@ -57,8 +57,9 @@ Expected response:
 
 ## Mock Image Processing
 
-The first backend demo endpoint accepts an uploaded image and returns a mock
-`ProcessResult` shaped for the frontend/spec.
+The first backend demo endpoint accepts an uploaded image, decodes it with
+OpenCV, and returns a mock `ProcessResult` shaped for the frontend/spec.
+Bounding boxes and predictions are still placeholder data.
 
 ```text
 POST http://127.0.0.1:8000/api/process

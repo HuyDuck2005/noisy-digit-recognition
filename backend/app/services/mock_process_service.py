@@ -11,6 +11,7 @@ from app.schemas.process import (
     ProcessResult,
     ProcessStatistics,
 )
+from app.services.image_processing_service import decode_uploaded_image
 
 
 MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024
@@ -34,10 +35,10 @@ def create_mock_process_result(
     parameters: dict[str, Any],
 ) -> ProcessResult:
     validate_image_upload(upload)
+    decoded_image = decode_uploaded_image(content)
 
     created_at = datetime.now(UTC)
     result_id = f"RUN-{created_at:%Y%m%d}-{uuid4().hex[:8].upper()}"
-    width, height = read_image_size(content)
     boxes = build_mock_boxes(result_id)
     low_confidence_count = sum(1 for box in boxes if box.confidence < 0.6)
 
@@ -52,8 +53,8 @@ def create_mock_process_result(
         created_at=created_at.isoformat(),
         processing_time_ms=320,
         image_info=ImageInfo(
-            width=width,
-            height=height,
+            width=decoded_image.width,
+            height=decoded_image.height,
             file_size=len(content),
             format=upload.content_type or "unknown",
         ),
@@ -76,9 +77,9 @@ def create_mock_process_result(
         output_image_url=output_image_url,
         output_txt_url=f"/api/output-txt/{result_id}",
         llm_comment=(
-            "Mock backend detected 3 characters. This response is shaped like "
-            "the ProcessResult contract and is ready to be replaced by the "
-            "OpenCV/CNN pipeline in the next step."
+            "Backend received and decoded the uploaded image with OpenCV. "
+            "Bounding boxes and predictions are still mock data and will be "
+            "replaced by the image-processing pipeline in the next step."
         ),
         model_version="mock-cnn-v0",
     )
@@ -115,65 +116,3 @@ def build_mock_boxes(result_id: str) -> list[BoundingBoxResult]:
         )
         for index, x, y, width, height, label, confidence, box_status in raw_boxes
     ]
-
-
-def read_image_size(content: bytes) -> tuple[int | None, int | None]:
-    if content.startswith(b"\x89PNG\r\n\x1a\n") and len(content) >= 24:
-        width = int.from_bytes(content[16:20], "big")
-        height = int.from_bytes(content[20:24], "big")
-        return width, height
-
-    if content.startswith(b"\xff\xd8"):
-        return read_jpeg_size(content)
-
-    return None, None
-
-
-def read_jpeg_size(content: bytes) -> tuple[int | None, int | None]:
-    index = 2
-    while index + 9 < len(content):
-        if content[index] != 0xFF:
-            index += 1
-            continue
-
-        marker = content[index + 1]
-        index += 2
-
-        while marker == 0xFF and index < len(content):
-            marker = content[index]
-            index += 1
-
-        if marker in {0xD8, 0xD9}:
-            continue
-
-        if index + 2 > len(content):
-            break
-
-        segment_length = int.from_bytes(content[index : index + 2], "big")
-        if segment_length < 2:
-            break
-
-        if marker in {
-            0xC0,
-            0xC1,
-            0xC2,
-            0xC3,
-            0xC5,
-            0xC6,
-            0xC7,
-            0xC9,
-            0xCA,
-            0xCB,
-            0xCD,
-            0xCE,
-            0xCF,
-        }:
-            if index + 7 <= len(content):
-                height = int.from_bytes(content[index + 3 : index + 5], "big")
-                width = int.from_bytes(content[index + 5 : index + 7], "big")
-                return width, height
-            break
-
-        index += segment_length
-
-    return None, None
