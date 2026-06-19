@@ -1,14 +1,14 @@
-# Noisy Digit Recognition Backend
+# Backend Noisy Digit Recognition
 
-Backend scaffold built with FastAPI.
+Backend được xây dựng bằng FastAPI.
 
-## Requirements
+## Yêu cầu
 
 - Python 3.10+
 
-## Setup
+## Cài đặt
 
-From the repository root:
+Chạy từ thư mục gốc của repo:
 
 ```powershell
 cd backend
@@ -19,77 +19,81 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-Optional local environment file:
+Nếu cần file cấu hình local, có thể tạo từ file mẫu:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-Keep `.env` local only. Commit `.env.example` as the shared template.
+Chỉ giữ `.env` trên máy local. File `.env.example` là file mẫu và có thể commit lên GitHub trừ khi clone về
 
-## Run
-
-From the `backend/` folder:
-
-```powershell
-uvicorn app.main:app --reload --port 8000
+## Chạy backend
 ```
+uvicorn app.main:app --reload --port 8000
 
-If Windows reports a launcher error because the project path contains accented
-characters, run uvicorn through Python instead:
+Nếu Windows báo lỗi launcher do đường dẫn project có dấu tiếng Việt, chạy uvicorn qua Python:
 
 ```powershell
 $env:PYTHONUTF8 = "1"
 python -m uvicorn app.main:app --reload --port 8000
 ```
 
-Health check:
+## Kiểm tra health
 
-```text
+```
 GET http://127.0.0.1:8000/api/health
 ```
 
-Expected response:
+Response mong đợi:
 
 ```json
 {"status":"ok"}
 ```
 
-## Mock Image Processing
+## API xử lý ảnh hiện tại
 
-The first backend demo endpoint accepts an uploaded image, decodes it with
-OpenCV, saves the original, grayscale, and binary pipeline images, and returns a
-mock `ProcessResult` shaped for the frontend/spec. Bounding boxes and
-predictions are still placeholder data.
+Endpoint demo đầu tiên nhận ảnh upload, đọc ảnh bằng OpenCV, lưu ảnh gốc, ảnh grayscale và ảnh binary. Response trả về theo cấu trúc `ProcessResult` để frontend có thể dùng dần.
 
-```text
+```
 POST http://127.0.0.1:8000/api/process
 ```
 
-Form fields:
+Các field trong form:
 
-| Field | Type | Required | Notes |
+| Field | Kiểu | Bắt buộc | Ghi chú |
 |---|---|---:|---|
-| `image` | File | Yes | JPG, JPEG, or PNG. `file` is also accepted as an alias. |
-| `parameters` | Text | No | JSON object with pipeline parameters. |
+| `image` | File | Có | Ảnh JPG, JPEG hoặc PNG. Field `file` cũng được chấp nhận như alias. |
+| `parameters` | Text | Không | JSON object chứa tham số pipeline. Có thể để trống. |
 
-You can test it from FastAPI docs:
+Ví dụ `parameters`:
+
+```json
+{"threshold_mode":"otsu","min_area":50}
+```
+
+Có thể test bằng FastAPI docs:
 
 ```text
 http://127.0.0.1:8000/docs
 ```
 
-Or with PowerShell:
+## Ảnh pipeline đã lưu
 
-```powershell
-$params = '{"threshold_mode":"otsu","min_area":50}'
-curl.exe -X POST "http://127.0.0.1:8000/api/process" `
-  -F "image=@C:\path\to\sample.png" `
-  -F "parameters=$params"
+Sau khi gọi `POST /api/process`, backend lưu ảnh vào:
+
+```text
+backend/storage/results/{result_id}/
 ```
 
-The response includes absolute pipeline image URLs that can be opened in the
-browser:
+Các ảnh hiện có:
+
+```text
+original.png
+grayscale.png
+binary.png
+```
+
+Response trả về URL đầy đủ để mở ảnh trong browser:
 
 ```text
 GET /api/images/original/{result_id}
@@ -97,9 +101,27 @@ GET /api/images/grayscale/{result_id}
 GET /api/images/binary/{result_id}
 ```
 
-At this stage, `output_image_url` points to the saved original image as a
-temporary preview. A real bounding-box output image will be added after box
-detection is implemented.
+Response cũng có `debug_links` để copy link nhanh khi test thủ công.
 
-For quick manual testing, the response also includes `debug_links` with full
-URLs for the saved original, grayscale, and binary images.
+## Trạng thái hiện tại
+
+Đã làm thật:
+
+- Upload ảnh.
+- Decode ảnh bằng OpenCV.
+- Lấy `width`, `height`, `file_size`, `format`.
+- Lưu ảnh gốc.
+- Chuyển ảnh sang grayscale.
+- Tạo ảnh binary bằng Otsu threshold.
+- Trả URL để mở ảnh `original`, `grayscale`, `binary`.
+
+Vẫn còn mock hoặc chưa làm:
+
+- Bounding boxes thật.
+- Connected components.
+- Output image có vẽ bounding box.
+- File `output.txt`.
+- Label và confidence từ CNN.
+- LLM comment thật.
+
+Hiện tại `output_image_url` tạm trỏ tới ảnh gốc đã lưu. Sau khi có bước detect bounding box thật, URL này sẽ trỏ tới ảnh output có bounding box.
