@@ -50,6 +50,7 @@ class DebugLinks(BaseModel):
     grayscale_image: str
     binary_image: str
     morphology_image: str
+    components_image: str
     output_preview: str
 
 

@@ -14,6 +14,7 @@ PIPELINE_IMAGE_FILENAMES = {
     "grayscale": "grayscale.png",
     "binary": "binary.png",
     "morphology": "morphology.png",
+    "components": "components.png",
 }
 
 
@@ -52,6 +53,7 @@ class InitialPipelineImages:
     grayscale_url: str
     binary_url: str
     morphology_url: str
+    components_url: str
 
 
 def save_initial_pipeline_images(
@@ -66,6 +68,7 @@ def save_initial_pipeline_images(
     grayscale_path = result_dir / PIPELINE_IMAGE_FILENAMES["grayscale"]
     binary_path = result_dir / PIPELINE_IMAGE_FILENAMES["binary"]
     morphology_path = result_dir / PIPELINE_IMAGE_FILENAMES["morphology"]
+    components_path = result_dir / PIPELINE_IMAGE_FILENAMES["components"]
 
     grayscale_image = cv2.cvtColor(decoded_image.image, cv2.COLOR_BGR2GRAY)
     _, binary_image = cv2.threshold(
@@ -75,17 +78,20 @@ def save_initial_pipeline_images(
         cv2.THRESH_BINARY | cv2.THRESH_OTSU,
     )
     morphology_image = apply_default_morphology(binary_image)
+    components_image = build_connected_components_image(morphology_image)
 
     write_png_image(original_path, decoded_image.image, "original")
     write_png_image(grayscale_path, grayscale_image, "grayscale")
     write_png_image(binary_path, binary_image, "binary")
     write_png_image(morphology_path, morphology_image, "morphology")
+    write_png_image(components_path, components_image, "components")
 
     return InitialPipelineImages(
         original_url=f"{base_url}/api/images/original/{result_id}",
         grayscale_url=f"{base_url}/api/images/grayscale/{result_id}",
         binary_url=f"{base_url}/api/images/binary/{result_id}",
         morphology_url=f"{base_url}/api/images/morphology/{result_id}",
+        components_url=f"{base_url}/api/images/components/{result_id}",
     )
 
 
@@ -138,3 +144,22 @@ def apply_default_morphology(binary_image: np.ndarray) -> np.ndarray:
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
     cleaned_foreground = cv2.morphologyEx(foreground, cv2.MORPH_OPEN, kernel)
     return cv2.bitwise_not(cleaned_foreground)
+
+
+def build_connected_components_image(morphology_image: np.ndarray) -> np.ndarray:
+    foreground = cv2.bitwise_not(morphology_image)
+    component_count, labels = cv2.connectedComponents(foreground, connectivity=8)
+
+    visualization = np.full((*labels.shape, 3), 255, dtype=np.uint8)
+    for label in range(1, component_count):
+        color = np.array(
+            [
+                (37 * label) % 255,
+                (97 * label) % 255,
+                (173 * label) % 255,
+            ],
+            dtype=np.uint8,
+        )
+        visualization[labels == label] = color
+
+    return visualization
