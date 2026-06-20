@@ -13,6 +13,7 @@ PIPELINE_IMAGE_FILENAMES = {
     "original": "original.png",
     "grayscale": "grayscale.png",
     "binary": "binary.png",
+    "morphology": "morphology.png",
 }
 
 
@@ -50,6 +51,7 @@ class InitialPipelineImages:
     original_url: str
     grayscale_url: str
     binary_url: str
+    morphology_url: str
 
 
 def save_initial_pipeline_images(
@@ -63,6 +65,7 @@ def save_initial_pipeline_images(
     original_path = result_dir / PIPELINE_IMAGE_FILENAMES["original"]
     grayscale_path = result_dir / PIPELINE_IMAGE_FILENAMES["grayscale"]
     binary_path = result_dir / PIPELINE_IMAGE_FILENAMES["binary"]
+    morphology_path = result_dir / PIPELINE_IMAGE_FILENAMES["morphology"]
 
     grayscale_image = cv2.cvtColor(decoded_image.image, cv2.COLOR_BGR2GRAY)
     _, binary_image = cv2.threshold(
@@ -71,15 +74,18 @@ def save_initial_pipeline_images(
         255,
         cv2.THRESH_BINARY | cv2.THRESH_OTSU,
     )
+    morphology_image = apply_default_morphology(binary_image)
 
     write_png_image(original_path, decoded_image.image, "original")
     write_png_image(grayscale_path, grayscale_image, "grayscale")
     write_png_image(binary_path, binary_image, "binary")
+    write_png_image(morphology_path, morphology_image, "morphology")
 
     return InitialPipelineImages(
         original_url=f"{base_url}/api/images/original/{result_id}",
         grayscale_url=f"{base_url}/api/images/grayscale/{result_id}",
         binary_url=f"{base_url}/api/images/binary/{result_id}",
+        morphology_url=f"{base_url}/api/images/morphology/{result_id}",
     )
 
 
@@ -125,3 +131,10 @@ def write_png_image(path: Path, image: np.ndarray, stage: str) -> None:
         path.write_bytes(encoded_image.tobytes())
     except OSError:
         raise_save_error(stage)
+
+
+def apply_default_morphology(binary_image: np.ndarray) -> np.ndarray:
+    foreground = cv2.bitwise_not(binary_image)
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+    cleaned_foreground = cv2.morphologyEx(foreground, cv2.MORPH_OPEN, kernel)
+    return cv2.bitwise_not(cleaned_foreground)

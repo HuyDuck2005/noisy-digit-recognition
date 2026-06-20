@@ -80,6 +80,7 @@ def create_mock_process_result(
             original_url=pipeline_images.original_url,
             grayscale_url=pipeline_images.grayscale_url,
             binary_url=pipeline_images.binary_url,
+            morphology_url=pipeline_images.morphology_url,
             output_url=output_image_url,
         ),
         output_image_url=output_image_url,
@@ -96,6 +97,7 @@ def create_mock_process_result(
             original_image=pipeline_images.original_url,
             grayscale_image=pipeline_images.grayscale_url,
             binary_image=pipeline_images.binary_url,
+            morphology_image=pipeline_images.morphology_url,
             output_preview=output_image_url,
         ),
     )

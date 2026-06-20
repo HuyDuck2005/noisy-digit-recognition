@@ -52,7 +52,7 @@ Response mong đợi:
 
 ## API xử lý ảnh hiện tại
 
-Endpoint demo đầu tiên nhận ảnh upload, đọc ảnh bằng OpenCV, lưu ảnh gốc, ảnh grayscale và ảnh binary. Response trả về theo cấu trúc `ProcessResult` để frontend có thể dùng dần.
+Endpoint demo đầu tiên nhận ảnh upload, đọc ảnh bằng OpenCV, lưu ảnh gốc, ảnh grayscale, ảnh binary và ảnh morphology. Response trả về theo cấu trúc `ProcessResult` để frontend có thể dùng dần.
 
 ```
 POST http://127.0.0.1:8000/api/process
@@ -91,6 +91,7 @@ Các ảnh hiện có:
 original.png
 grayscale.png
 binary.png
+morphology.png
 ```
 
 Response trả về URL đầy đủ để mở ảnh trong browser:
@@ -99,6 +100,7 @@ Response trả về URL đầy đủ để mở ảnh trong browser:
 GET /api/images/original/{result_id}
 GET /api/images/grayscale/{result_id}
 GET /api/images/binary/{result_id}
+GET /api/images/morphology/{result_id}
 ```
 
 Response cũng có `debug_links` để copy link nhanh khi test thủ công.
@@ -113,7 +115,8 @@ Response cũng có `debug_links` để copy link nhanh khi test thủ công.
 - Lưu ảnh gốc.
 - Chuyển ảnh sang grayscale.
 - Tạo ảnh binary bằng Otsu threshold.
-- Trả URL để mở ảnh `original`, `grayscale`, `binary`.
+- Tạo ảnh morphology mặc định để giảm nhiễu foreground nhỏ.
+- Trả URL để mở ảnh `original`, `grayscale`, `binary`, `morphology`.
 
 Vẫn còn mock hoặc chưa làm:
 
