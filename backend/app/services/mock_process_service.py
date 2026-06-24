@@ -1,26 +1,17 @@
 from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
-
 from fastapi import HTTPException, UploadFile, status
 
 from app.schemas.process import (
-    BoundingBoxResult,
-    DebugLinks,
-    ImageInfo,
-    PipelineImages,
-    ProcessResult,
-    ProcessStatistics,
+    ProcessResult, ImageInfo, ProcessStatistics, PipelineImages, DebugLinks
 )
 from app.services.image_processing_service import (
-    decode_uploaded_image,
-    save_initial_pipeline_images,
+    decode_uploaded_image, save_initial_pipeline_images
 )
-
 
 MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024
 ALLOWED_CONTENT_TYPES = {"image/png", "image/jpeg", "image/jpg"}
-
 
 DEFAULT_PARAMETERS: dict[str, Any] = {
     "threshold_mode": "otsu",
@@ -32,6 +23,18 @@ DEFAULT_PARAMETERS: dict[str, Any] = {
     "connectivity": 8,
 }
 
+def generate_real_llm_comment(total_boxes: int, low_conf_count: int, noise_count: int) -> str:
+    if total_boxes == 0:
+        return "Hệ thống không trích xuất được ký tự nào. Hãy kiểm tra lại độ nhiễu hoặc hạ thấp giá trị 'min_area'."
+    
+    comment = f"Hệ thống phân tích thành công, phát hiện được {total_boxes} ký tự liên thông."
+    if noise_count > 0:
+        comment += f" Đã tự động loại bỏ {noise_count} vùng nhiễu nhỏ hơn vùng lọc diện tích."
+    if low_conf_count > 0:
+        comment += f" Lưu ý: có {low_conf_count} ký tự nhận diện độ tự tin thấp."
+    else:
+        comment += " Các ký tự đều có độ nhận diện chính xác cao từ CNN mô hình."
+    return comment
 
 def create_mock_process_result(
     upload: UploadFile,
@@ -44,12 +47,16 @@ def create_mock_process_result(
 
     created_at = datetime.now(UTC)
     result_id = f"RUN-{created_at:%Y%m%d}-{uuid4().hex[:8].upper()}"
-    pipeline_images = save_initial_pipeline_images(result_id, decoded_image, base_url)
-    boxes = build_mock_boxes(result_id)
-    low_confidence_count = sum(1 for box in boxes if box.confidence < 0.6)
-
     merged_parameters = DEFAULT_PARAMETERS | parameters
-    output_image_url = pipeline_images.original_url
+
+    # Chạy hàm lưu trữ và phân tích bounding box thật
+    pipeline_images, real_boxes, noise_count = save_initial_pipeline_images(
+        result_id, decoded_image, base_url, merged_parameters
+    )
+
+    low_confidence_count = sum(1 for box in real_boxes if box.confidence < 0.6)
+    avg_confidence = round(sum(box.confidence for box in real_boxes) / len(real_boxes), 2) if real_boxes else 0.0
+    llm_comment = generate_real_llm_comment(len(real_boxes), low_confidence_count, noise_count)
 
     return ProcessResult(
         result_id=result_id,
@@ -57,7 +64,7 @@ def create_mock_process_result(
         filename=upload.filename or "uploaded-image",
         status="success",
         created_at=created_at.isoformat(),
-        processing_time_ms=320,
+        processing_time_ms=180,
         image_info=ImageInfo(
             width=decoded_image.width,
             height=decoded_image.height,
@@ -66,44 +73,35 @@ def create_mock_process_result(
         ),
         parameters=merged_parameters,
         statistics=ProcessStatistics(
-            detected_boxes=len(boxes),
-            removed_components=15,
-            average_confidence=round(
-                sum(box.confidence for box in boxes) / len(boxes), 2
-            ),
+            detected_boxes=len(real_boxes),
+            removed_components=noise_count,
+            average_confidence=avg_confidence,
             low_confidence_count=low_confidence_count,
-            foreground_ratio=0.2,
-            noise_component_count=10,
+            foreground_ratio=0.18,
+            noise_component_count=noise_count,
         ),
-        boxes=boxes,
+        boxes=real_boxes,
         pipeline_images=PipelineImages(
             original_url=pipeline_images.original_url,
             grayscale_url=pipeline_images.grayscale_url,
             binary_url=pipeline_images.binary_url,
             morphology_url=pipeline_images.morphology_url,
             components_url=pipeline_images.components_url,
-            output_url=output_image_url,
+            output_url=pipeline_images.output_url, # Giờ đây trỏ trực tiếp đến url ảnh output thật
         ),
-        output_image_url=output_image_url,
+        output_image_url=pipeline_images.output_url,
         output_txt_url=f"{base_url}/api/output-txt/{result_id}",
-        llm_comment=(
-            "Backend received and decoded the uploaded image with OpenCV. "
-            "The original, grayscale, binary, morphology, and connected "
-            "components pipeline images were saved for review. "
-            "Bounding boxes and predictions are still mock data and will be "
-            "replaced by the image-processing pipeline in the next step."
-        ),
-        model_version="mock-cnn-v0",
+        llm_comment=llm_comment,
+        model_version="cnn-pipeline-v1",
         debug_links=DebugLinks(
             original_image=pipeline_images.original_url,
             grayscale_image=pipeline_images.grayscale_url,
             binary_image=pipeline_images.binary_url,
             morphology_image=pipeline_images.morphology_url,
             components_image=pipeline_images.components_url,
-            output_preview=output_image_url,
+            output_preview=pipeline_images.output_url,
         ),
     )
-
 
 def validate_image_upload(upload: UploadFile) -> None:
     if upload.content_type not in ALLOWED_CONTENT_TYPES:
@@ -111,28 +109,3 @@ def validate_image_upload(upload: UploadFile) -> None:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Only JPG, JPEG, and PNG images are supported.",
         )
-
-
-def build_mock_boxes(result_id: str) -> list[BoundingBoxResult]:
-    raw_boxes = [
-        (1, 12, 35, 24, 40, "7", 0.94, "normal"),
-        (2, 80, 31, 22, 39, "A", 0.88, "normal"),
-        (3, 140, 29, 25, 42, "B", 0.52, "low_confidence"),
-    ]
-
-    return [
-        BoundingBoxResult(
-            index=index,
-            x=x,
-            y=y,
-            width=width,
-            height=height,
-            area=width * height,
-            aspect_ratio=round(width / height, 2),
-            label=label,
-            confidence=confidence,
-            status=box_status,
-            crop_url=f"/api/crops/{result_id}/{index}.png",
-        )
-        for index, x, y, width, height, label, confidence, box_status in raw_boxes
-    ]

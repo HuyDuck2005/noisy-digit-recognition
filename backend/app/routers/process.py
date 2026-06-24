@@ -1,67 +1,27 @@
-import json
-from typing import Any
+# Thêm vào cuối file backend/app/routers/process.py
 
-from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile, status
+from fastapi.responses import FileResponse
+from app.services.image_processing_service import RESULTS_ROOT
 
-from app.schemas.process import ProcessResult
-from app.services.mock_process_service import (
-    MAX_UPLOAD_SIZE_BYTES,
-    create_mock_process_result,
-)
+@router.get("/output-txt/{result_id}")
+async def get_output_text_file(result_id: str) -> FileResponse:
+    txt_path = (RESULTS_ROOT / result_id / "output.txt").resolve()
+    results_root = RESULTS_ROOT.resolve()
 
-
-router = APIRouter()
-
-
-@router.post("/process", response_model=ProcessResult)
-async def process_image(
-    request: Request,
-    image: UploadFile | None = File(default=None),
-    file: UploadFile | None = File(default=None),
-    parameters: str | None = Form(default=None),
-) -> ProcessResult:
-    upload = image or file
-    if upload is None:
+    if results_root not in txt_path.parents:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Image file is required. Use form field 'image' or 'file'.",
+            detail="Invalid result path.",
         )
 
-    parsed_parameters = parse_parameters(parameters)
-    content = await upload.read()
-
-    if not content:
+    if not txt_path.is_file():
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Uploaded image is empty.",
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Output text file not found for this execution.",
         )
 
-    if len(content) > MAX_UPLOAD_SIZE_BYTES:
-        raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail="Uploaded image exceeds the 10MB limit.",
-        )
-
-    base_url = str(request.base_url).rstrip("/")
-    return create_mock_process_result(upload, content, parsed_parameters, base_url)
-
-
-def parse_parameters(parameters: str | None) -> dict[str, Any]:
-    if not parameters:
-        return {}
-
-    try:
-        parsed = json.loads(parameters)
-    except json.JSONDecodeError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Parameters must be valid JSON.",
-        ) from exc
-
-    if not isinstance(parsed, dict):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Parameters must be a JSON object.",
-        )
-
-    return parsed
+    return FileResponse(
+        path=txt_path, 
+        media_type="text/plain", 
+        filename=f"{result_id}_output.txt"
+    )

@@ -1,5 +1,4 @@
-
-node_modules/
+storage/
 .venv/
 __pycache__/
-*.py[cod]
+*.pyc
