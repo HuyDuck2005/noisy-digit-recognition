@@ -1,11 +1,30 @@
 {
-  "result_id": "RUN-20260610-0001",
+  "result_id": "RUN-DEMO-OPENCV",
   "status": "success",
-  "image_info": { "width": 512, "height": 256 },
+  "model_version": "opencv-cc-mock-recognizer-v1",
+  "llm_comment": "Pipeline currently uses OpenCV connected components and a deterministic mock recognizer; no deep learning model has been trained yet.",
+  "statistics": {
+    "detected_boxes": 1,
+    "average_confidence": 0.72,
+    "low_confidence_count": 0
+  },
   "boxes": [
-    { "index": 1, "label": "7", "confidence": 0.94, "x": 12, "y": 35, "width": 24, "height": 40, "status": "normal" },
-    { "index": 2, "label": "A", "confidence": 0.88, "x": 80, "y": 31, "width": 22, "height": 39, "status": "normal" },
-    { "index": 3, "label": "B", "confidence": 0.52, "x": 140, "y": 29, "width": 25, "height": 42, "status": "low_confidence" }
-  ],
-  "llm_comment": "Hệ thống phát hiện 3 ký tự. Cảnh báo: Ký tự 'B' có độ tin cậy thấp (52%), có thể do đứt nét. Gợi ý: Bật closing hoặc tăng nhẹ dilation iterations."
+    {
+      "index": 1,
+      "label": "A",
+      "confidence": 0.72,
+      "x": 12,
+      "y": 35,
+      "width": 24,
+      "height": 40,
+      "area": 960,
+      "aspect_ratio": 0.6,
+      "status": "normal",
+      "top_k": [
+        { "label": "A", "confidence": 0.72 },
+        { "label": "H", "confidence": 0.61 },
+        { "label": "O", "confidence": 0.5 }
+      ]
+    }
+  ]
 }

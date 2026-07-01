@@ -1,11 +1,10 @@
-import React from "react";
-import { Outlet } from "react-router-dom";
-import Sidebar from "../components/Layout/Sidebar";
-import Header from "../components/Layout/Header";
+import React from 'react';
+import { Outlet } from 'react-router-dom';
+import Header from './Header';
+import Sidebar from './Sidebar';
 
 const MainLayout = () => {
   return (
-    // Thêm bg-slate-50 cho chế độ sáng, giữ nguyên dark cho chế độ tối
     <div className="flex w-full min-h-screen bg-slate-50 dark:bg-[#071526] transition-colors duration-300 overflow-x-hidden">
       <Sidebar />
       <main className="flex flex-col flex-1 h-screen overflow-hidden min-w-0">

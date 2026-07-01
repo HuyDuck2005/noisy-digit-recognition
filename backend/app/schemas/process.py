@@ -19,6 +19,11 @@ class ProcessStatistics(BaseModel):
     noise_component_count: int
 
 
+class RecognitionCandidate(BaseModel):
+    label: str
+    confidence: float
+
+
 class BoundingBoxResult(BaseModel):
     index: int
     x: int
@@ -31,6 +36,8 @@ class BoundingBoxResult(BaseModel):
     confidence: float
     status: str
     crop_url: str | None = None
+    top_k: list[RecognitionCandidate] = Field(default_factory=list)
+    foreground_ratio: float | None = None
 
 
 class PipelineImages(BaseModel):
@@ -48,6 +55,7 @@ class PipelineImages(BaseModel):
 class DebugLinks(BaseModel):
     original_image: str
     grayscale_image: str
+    denoised_image: str | None = None
     binary_image: str
     morphology_image: str
     components_image: str

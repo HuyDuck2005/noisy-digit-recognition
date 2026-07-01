@@ -2,3 +2,14 @@ storage/
 .venv/
 __pycache__/
 *.pyc
+node_modules
+datasets/
+*.zip
+*.tar
+*.tgz
+*.tar.lzma
+*.h5
+*.mat
+*.pt
+*.pth
+*.onnx
