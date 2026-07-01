@@ -15,7 +15,7 @@ const sections = [
 ];
 
 const AUTO_OPTIMAL_PATCH = {
-  resize_scale: 1.5,
+  resize_scale: 1.0,
   contrast_method: 'clahe',
   clahe_clip_limit: 2.2,
   illumination_correction: 'none',
@@ -25,23 +25,31 @@ const AUTO_OPTIMAL_PATCH = {
   edge_method: 'none',
   threshold_method: 'adaptive',
   adaptive_method: 'gaussian',
-  adaptive_block_size: 31,
-  adaptive_c: 11,
-  morphology_mode: 'open_close',
+  adaptive_block_size: 25,
+  adaptive_c: 9,
+  morphology_mode: 'opening',
   kernel_shape: 'rect',
   kernel_size: [2, 2],
   opening_iterations: 1,
-  closing_iterations: 1,
-  remove_lines: false,
+  closing_iterations: 0,
+  dilation_iterations: 0,
+  erosion_iterations: 0,
+  remove_lines: true,
+  line_removal_method: 'morphology',
+  horizontal_line_kernel: 60,
+  vertical_line_kernel: 60,
   bbox_methods: ['connected_components'],
   contours_enabled: false,
   mser_enabled: false,
-  min_area: 25,
+  min_area: 80,
   min_width: 2,
-  min_height: 5,
-  min_fill_ratio: 0.02,
+  min_height: 24,
+  min_fill_ratio: 0.1,
+  max_width_ratio: 0.1,
+  max_height_ratio: 0.2,
+  max_aspect_ratio: 1.15,
   padding: 2,
-  merge_close_boxes: true,
+  merge_close_boxes: false,
   split_wide_boxes: false,
   multi_branch_enabled: false,
 };
@@ -184,6 +192,8 @@ const ParameterPanel = ({ parameters, onSave, onCancel, disabled, presetName }) 
                 <NumberField label="Cao min" value={draft.min_height} min="0" onChange={(v) => update('min_height', v)} />
                 <NumberField label="Aspect min" value={draft.min_aspect_ratio} step="0.01" min="0.01" onChange={(v) => update('min_aspect_ratio', v)} />
                 <NumberField label="Aspect max" value={draft.max_aspect_ratio} step="0.1" min="0.1" onChange={(v) => update('max_aspect_ratio', v)} />
+                <NumberField label="Rộng max / ảnh" value={draft.max_width_ratio} step="0.01" min="0.01" onChange={(v) => update('max_width_ratio', v)} />
+                <NumberField label="Cao max / ảnh" value={draft.max_height_ratio} step="0.01" min="0.01" onChange={(v) => update('max_height_ratio', v)} />
                 <NumberField label="Fill ratio min" value={draft.min_fill_ratio} step="0.01" min="0" onChange={(v) => update('min_fill_ratio', v)} />
                 <NumberField label="Đệm crop (padding)" value={draft.padding} min="0" onChange={(v) => update('padding', v)} />
               </FieldGrid>
@@ -204,7 +214,7 @@ const ParameterPanel = ({ parameters, onSave, onCancel, disabled, presetName }) 
         </div>
 
         <div className="settings-footer">
-          <p>`Auto tối ưu` áp bộ tham số cân bằng cho ảnh nhiễu vừa. Muốn xử lý bảng, bật line removal hoặc chọn preset Có bảng.</p>
+          <p>`Auto tối ưu` áp bộ tham số strict cho ảnh số bị nhiễu: opening, line removal, tắt merge/multi-branch, tăng min_height/min_area.</p>
           <div className="flex gap-2">
             <button type="button" onClick={onCancel} className="btn btn-sm btn-ghost">Hủy</button>
             <button type="button" onClick={() => onSave(draft)} disabled={disabled} className="btn btn-sm btn-primary">Lưu cài đặt</button>
