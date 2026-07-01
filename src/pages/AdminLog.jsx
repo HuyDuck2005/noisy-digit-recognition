@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 
 const LOGS = [
-  { time: 'local', level: 'INFO', msg: 'Advanced Classical CV BBox Pipeline is the active phase.', src: 'pipeline' },
-  { time: 'local', level: 'INFO', msg: 'Recognition is disabled. Candidate boxes only.', src: 'bbox' },
-  { time: 'local', level: 'INFO', msg: 'Datasets are not required in this phase.', src: 'datasets' },
+  { time: 'local', level: 'INFO', msg: 'Advanced Classical CV BBox Pipeline đang là phase hiện tại.', src: 'pipeline' },
+  { time: 'local', level: 'INFO', msg: 'Nhận dạng đang tắt. Chỉ tạo bbox ứng viên.', src: 'bbox' },
+  { time: 'local', level: 'INFO', msg: 'Phase này chưa cần dataset.', src: 'datasets' },
 ];
 
 const USERS = [
@@ -24,22 +24,22 @@ const AdminLog = () => {
     <div className="flex flex-col gap-6 anim-in">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="page-eyebrow">Administrator</h2>
-          <h1 className="page-title">System Status</h1>
-          <p className="page-sub">Mock auth, OpenCV BBox Pipeline, dataset not required.</p>
+          <h2 className="page-eyebrow">Quản trị</h2>
+          <h1 className="page-title">Trạng thái hệ thống</h1>
+          <p className="page-sub">Mock auth, OpenCV BBox Pipeline, chưa cần dataset.</p>
         </div>
-        <span className="badge badge-red">ADMIN ONLY</span>
+        <span className="badge badge-red">ADMIN</span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <Info label="Pipeline" value="Advanced CV" />
-        <Info label="Output" value="Candidate boxes" />
-        <Info label="Dataset" value="Not required" />
-        <Info label="Training" value="Future phase" />
+        <Info label="Output" value="BBox ứng viên" />
+        <Info label="Dataset" value="Chưa cần" />
+        <Info label="Training" value="Phase sau" />
       </div>
 
       <div className="flex gap-2">
-        {[['logs', 'System log'], ['users', 'Users'], ['model', 'Future training']].map(([id, label]) => (
+        {[['logs', 'Log hệ thống'], ['users', 'User'], ['model', 'Train phase sau']].map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)} className={`btn btn-sm ${tab === id ? 'btn-primary' : 'btn-ghost'}`}>
             {label}
           </button>
@@ -86,8 +86,8 @@ const AdminLog = () => {
 
       {tab === 'model' && (
         <div className="card">
-          <h3 className="card-title">No trained model</h3>
-          <p className="card-sub mt-2">Current work is preprocessing and candidate bbox extraction. Training/export happens after the bbox baseline is stable.</p>
+          <h3 className="card-title">Chưa có model đã train</h3>
+          <p className="card-sub mt-2">Hiện tại chỉ tiền xử lý và trích bbox ứng viên. Training/export sẽ làm sau khi bbox baseline ổn định.</p>
         </div>
       )}
     </div>

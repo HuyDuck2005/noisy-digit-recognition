@@ -173,17 +173,17 @@ const PRESETS = {
 };
 
 const LOADING_STEPS = [
-  'Decode image',
-  'Grayscale',
-  'Contrast / illumination',
-  'Denoise',
-  'Edge/stroke enhancement',
-  'Threshold branches',
-  'Morphology',
-  'Line removal',
-  'Region proposals',
-  'Box fusion/filtering',
-  'Crops/output',
+  'Giải mã ảnh (decode)',
+  'Chuyển xám (grayscale)',
+  'Tương phản / ánh sáng nền',
+  'Khử nhiễu (denoise)',
+  'Tăng nét / biên nét',
+  'Ngưỡng hóa đa nhánh',
+  'Hình thái học (morphology)',
+  'Xóa đường kẻ bảng',
+  'Đề xuất vùng (region proposals)',
+  'Lọc / gộp bbox',
+  'Crop và xuất kết quả',
 ];
 
 const ImageProcess = () => {
@@ -191,6 +191,7 @@ const ImageProcess = () => {
   const [previewUrl, setPreviewUrl] = useState('');
   const [parameters, setParameters] = useState(PRESETS.light_noise.parameters);
   const [presetId, setPresetId] = useState('light_noise');
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [resultData, setResultData] = useState(null);
@@ -199,11 +200,11 @@ const ImageProcess = () => {
   const canRun = Boolean(imageFile) && !loading;
 
   const badges = useMemo(() => [
-    'Mode: Advanced Classical CV',
-    'Recognition: Disabled',
-    'Model: Not trained',
-    'Dataset: Not required',
-    'Output: Candidate boxes only',
+    'Chế độ: Advanced Classical CV',
+    'Nhận dạng: Tắt',
+    'Model: Chưa train',
+    'Dataset: Chưa cần',
+    'Output: Candidate boxes',
   ], []);
 
   const handleImageSelect = (file) => {
@@ -221,7 +222,7 @@ const ImageProcess = () => {
 
   const handleRun = async () => {
     if (!imageFile) {
-      setError('Please select an image first.');
+      setError('Hãy chọn ảnh trước khi chạy.');
       return;
     }
     setLoading(true);
@@ -231,7 +232,7 @@ const ImageProcess = () => {
       setResultData(result);
       saveHistorySummary(result);
     } catch (err) {
-      setError(err.message || 'Backend processing failed.');
+      setError(err.message || 'Backend xử lý thất bại.');
     } finally {
       setLoading(false);
     }
@@ -251,7 +252,7 @@ const ImageProcess = () => {
         <div>
           <h2 className="page-eyebrow">Workspace</h2>
           <h1 className="page-title">OpenCV Advanced BBox Pipeline</h1>
-          <p className="page-sub">Classical CV preprocessing and candidate bounding box extraction. No recognition model.</p>
+          <p className="page-sub">Tiền xử lý ảnh cổ điển (Classical CV) và trích bbox ứng viên (candidate bounding boxes). Không nhận dạng ký tự.</p>
         </div>
         <div className="flex flex-wrap gap-2 max-w-xl">
           {badges.map((badge) => <span key={badge} className="badge badge-blue">{badge}</span>)}
@@ -264,9 +265,9 @@ const ImageProcess = () => {
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="card-title">Input image</h3>
-                <p className="card-sub">JPG or PNG, max 10MB.</p>
+                <p className="card-sub">Ảnh JPG/PNG, tối đa 10MB.</p>
               </div>
-              {imageFile && <button onClick={reset} className="btn btn-sm btn-ghost">Clear</button>}
+              {imageFile && <button onClick={reset} className="btn btn-sm btn-ghost">Xóa</button>}
             </div>
             <DragDropZone onImageSelect={handleImageSelect} />
             {previewUrl && (
@@ -283,7 +284,7 @@ const ImageProcess = () => {
           </div>
 
           <div className="card" style={{ padding: 20 }}>
-            <h3 className="card-title mb-3">Presets</h3>
+            <h3 className="card-title mb-3">Preset nhanh</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {Object.entries(PRESETS).map(([id, item]) => (
                 <button key={id} onClick={() => selectPreset(id)} className={`btn btn-sm ${presetId === id ? 'btn-primary' : 'btn-secondary'}`}>
@@ -293,19 +294,27 @@ const ImageProcess = () => {
             </div>
           </div>
 
-          <ParameterPanel
-            parameters={parameters}
-            onChange={setParameters}
-            onRun={handleRun}
-            disabled={!canRun}
-            presetName={PRESETS[presetId].label}
-          />
+          <div className="card" style={{ padding: 20 }}>
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div>
+                <h3 className="card-title">Cấu hình chạy</h3>
+                <p className="card-sub">Bấm icon sliders để chỉnh tham số.</p>
+              </div>
+              <button type="button" className="settings-icon-btn" onClick={() => setSettingsOpen(true)} title="Cài đặt pipeline" aria-label="Cài đặt pipeline">
+                <SlidersIcon />
+              </button>
+            </div>
+            <ParameterSummary parameters={parameters} />
+            <button onClick={handleRun} disabled={!canRun} className={`btn w-full mt-4 ${!canRun ? 'opacity-50 cursor-not-allowed' : 'btn-primary'}`}>
+              Chạy pipeline BBox
+            </button>
+          </div>
         </div>
 
         <div className="xl:col-span-8 flex flex-col gap-5">
           {loading && (
             <div className="card card-glow" style={{ minHeight: 260 }}>
-              <h3 className="text-teal font-bold text-lg mb-4">Running Advanced BBox Pipeline</h3>
+              <h3 className="text-teal font-bold text-lg mb-4">Đang chạy Advanced BBox Pipeline</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {LOADING_STEPS.map((step, index) => (
                   <div key={step} className="rounded-xl px-3 py-2 text-sm" style={{ background: 'rgba(7,21,38,0.55)', border: '1px solid rgba(56,189,248,0.08)', color: '#cbd5e1' }}>
@@ -319,20 +328,23 @@ const ImageProcess = () => {
           {!loading && !resultData && (
             <div className="card flex flex-col items-center justify-center text-center opacity-80" style={{ minHeight: 320, padding: 32 }}>
               <div style={{ fontSize: 40, marginBottom: 16, color: '#2dd4bf', fontWeight: 900 }}>BBox</div>
-              <h3 style={{ color: '#cbd5e1', fontWeight: 700, fontSize: 16, marginBottom: 8 }}>No run yet</h3>
+              <h3 style={{ color: '#cbd5e1', fontWeight: 700, fontSize: 16, marginBottom: 8 }}>Chưa có lượt chạy</h3>
               <p style={{ color: '#64748b', fontSize: 14, maxWidth: 460 }}>
-                Select an image and run advanced classical preprocessing. Output is candidate bounding boxes only.
+                Chọn ảnh, chọn preset hoặc chỉnh settings, rồi chạy pipeline. Kết quả chỉ là bbox ứng viên.
               </p>
+              <div className="empty-steps">
+                {LOADING_STEPS.slice(0, 6).map((step, index) => <span key={step}>{index + 1}. {step}</span>)}
+              </div>
             </div>
           )}
 
           {resultData && !loading && (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                <Stat label="Candidate boxes" value={stats?.candidate_boxes ?? 0} />
-                <Stat label="Connected boxes" value={stats?.possible_connected_characters ?? 0} />
-                <Stat label="Noise removed" value={stats?.removed_noise_components ?? 0} />
-                <Stat label="Processing time" value={`${resultData.processing_time_ms}ms`} />
+                <Stat label="BBox ứng viên" value={stats?.candidate_boxes ?? 0} />
+                <Stat label="BBox có thể dính" value={stats?.possible_connected_characters ?? 0} />
+                <Stat label="Nhiễu đã lọc" value={stats?.removed_noise_components ?? 0} />
+                <Stat label="Thời gian xử lý" value={`${resultData.processing_time_ms}ms`} />
               </div>
 
               <div className="card card-glow" style={{ padding: 20 }}>
@@ -342,8 +354,8 @@ const ImageProcess = () => {
                     <p className="text-xs text-slate-500 mt-1">{resultData.filename}</p>
                   </div>
                   <div className="flex gap-2">
-                    <a href={resultData.output_image_url} target="_blank" rel="noreferrer" className="btn btn-sm btn-secondary">Open output.png</a>
-                    <a href={resultData.output_txt_url} target="_blank" rel="noreferrer" className="btn btn-sm btn-secondary">Open output.txt</a>
+                    <a href={resultData.output_image_url} target="_blank" rel="noreferrer" className="btn btn-sm btn-secondary">Mở output.png</a>
+                    <a href={resultData.output_txt_url} target="_blank" rel="noreferrer" className="btn btn-sm btn-secondary">Mở output.txt</a>
                   </div>
                 </div>
                 <div className="rounded-xl overflow-hidden flex items-center justify-center" style={{ background: '#040d1a', border: '1px solid rgba(45,212,191,0.18)', minHeight: 240 }}>
@@ -364,6 +376,19 @@ const ImageProcess = () => {
           )}
         </div>
       </div>
+
+      {settingsOpen && (
+        <ParameterPanel
+          parameters={parameters}
+          onSave={(next) => {
+            setParameters(next);
+            setSettingsOpen(false);
+          }}
+          onCancel={() => setSettingsOpen(false)}
+          disabled={loading}
+          presetName={PRESETS[presetId].label}
+        />
+      )}
     </div>
   );
 };
@@ -393,5 +418,35 @@ const saveHistorySummary = (result) => {
   const next = [summary, ...existing.filter((item) => item.result_id !== summary.result_id)].slice(0, 50);
   localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(next));
 };
+
+const ParameterSummary = ({ parameters }) => {
+  const rows = [
+    ['Ngưỡng', parameters.threshold_method],
+    ['Khử nhiễu', parameters.denoise_method],
+    ['Morphology', parameters.morphology_mode],
+    ['BBox', parameters.multi_branch_enabled ? 'multi-branch' : 'single-branch'],
+    ['Line removal', parameters.remove_lines ? 'on' : 'off'],
+    ['Min area', parameters.min_area],
+  ];
+
+  return (
+    <div className="param-summary">
+      {rows.map(([label, value]) => (
+        <div key={label}>
+          <span>{label}</span>
+          <strong>{String(value)}</strong>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const SlidersIcon = () => (
+  <span className="sliders-icon" aria-hidden="true">
+    <i />
+    <i />
+    <i />
+  </span>
+);
 
 export default ImageProcess;

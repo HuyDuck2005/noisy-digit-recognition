@@ -13,11 +13,11 @@ const Register = () => {
   const handleSubmit = (event) => {
     event.preventDefault();
     if (!form.name || !form.email || !form.password || !form.confirm) {
-      setError('Please fill in every field.');
+      setError('Hãy nhập đủ thông tin.');
       return;
     }
     if (form.password !== form.confirm) {
-      setError('Password confirmation does not match.');
+      setError('Mật khẩu xác nhận không khớp.');
       return;
     }
     setError('');
@@ -31,34 +31,34 @@ const Register = () => {
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-[#0d3d6b] to-[#0d9488] mb-4 shadow-lg shadow-teal-500/30">
           <span className="text-2xl font-black text-white">ND</span>
         </div>
-        <h2 className="text-2xl font-bold text-white">Create local profile</h2>
-        <p className="text-slate-400 text-sm mt-2">Mock auth for Advanced CV BBox Lab.</p>
+        <h2 className="text-2xl font-bold text-white">Tạo profile local</h2>
+        <p className="text-slate-400 text-sm mt-2">Mock auth cho Advanced CV BBox Lab.</p>
       </div>
 
       <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-        <Field label="Name">
+        <Field label="Tên">
           <input name="name" type="text" className="form-input" placeholder="Demo User" value={form.name} onChange={handleChange} />
         </Field>
         <Field label="Email">
           <input name="email" type="email" className="form-input" placeholder="admin@example.local" value={form.email} onChange={handleChange} />
         </Field>
-        <Field label="Password">
+        <Field label="Mật khẩu">
           <input name="password" type="password" className="form-input" placeholder="mock password" value={form.password} onChange={handleChange} />
         </Field>
-        <Field label="Confirm password">
+        <Field label="Xác nhận mật khẩu">
           <input name="confirm" type="password" className="form-input" placeholder="mock password" value={form.confirm} onChange={handleChange} />
         </Field>
 
         {error && <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">{error}</p>}
 
         <button type="submit" className="btn btn-primary w-full mt-2 py-3">
-          Create profile
+          Tạo profile
         </button>
       </form>
 
       <p className="text-center text-sm text-slate-500 mt-6">
-        Already have a local profile?{' '}
-        <Link to="/login" className="text-teal font-bold hover:underline">Sign in</Link>
+        Đã có profile local?{' '}
+        <Link to="/login" className="text-teal font-bold hover:underline">Đăng nhập</Link>
       </p>
     </div>
   );

@@ -29,13 +29,13 @@ const Sidebar = () => {
       </div>
 
       <nav className="flex-1 px-4 py-6 overflow-y-auto custom-scrollbar">
-        <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 px-2">Main</div>
-        <NavItem to="/dashboard" label="Dashboard" active={isActive('/dashboard') || isActive('/')} />
+        <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 px-2">Chính</div>
+        <NavItem to="/dashboard" label="Tổng quan" active={isActive('/dashboard') || isActive('/')} />
         <NavItem to="/process" label="BBox Pipeline" active={isActive('/process')} />
-        <NavItem to="/history" label="History" active={isActive('/history')} />
+        <NavItem to="/history" label="Lịch sử" active={isActive('/history')} />
 
-        <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 px-2 mt-8">System</div>
-        <NavItem to="/admin/models" label="Future Training" active={isAdminActive()} />
+        <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 px-2 mt-8">Hệ thống</div>
+        <NavItem to="/admin/models" label="Train phase sau" active={isAdminActive()} />
       </nav>
 
       <div className="p-4 border-t border-white/5 bg-[#040d1a]/50">
@@ -50,7 +50,7 @@ const Sidebar = () => {
             <div className="text-white font-medium text-sm truncate">{user?.name || 'Demo User'}</div>
             <div className="text-slate-500 text-xs truncate">{user?.role || 'User'}</div>
           </div>
-          <span className="text-slate-500 text-xs">{showLogout ? 'Up' : 'Down'}</span>
+          <span className="text-slate-500 text-xs">{showLogout ? 'Ẩn' : 'Mở'}</span>
         </button>
 
         {showLogout && (
@@ -58,7 +58,7 @@ const Sidebar = () => {
             onClick={handleLogout}
             className="w-full mt-2 py-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-red-500/20 transition-colors"
           >
-            Log out
+            Đăng xuất
           </button>
         )}
       </div>

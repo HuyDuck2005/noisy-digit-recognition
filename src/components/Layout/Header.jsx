@@ -12,7 +12,7 @@ const Header = () => {
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-sm font-medium shadow-[0_0_10px_rgba(45,212,191,0.1)]">
           <div className="w-2 h-2 rounded-full bg-teal-400 animate-pulse shadow-[0_0_8px_rgba(45,212,191,0.8)]" />
-          Advanced Classical CV
+          CV cổ điển nâng cao
         </div>
       </div>
     </header>

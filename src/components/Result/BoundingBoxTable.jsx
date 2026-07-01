@@ -62,15 +62,15 @@ const BoundingBoxTable = ({ boxes = [] }) => {
     <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(13,30,60,0.7)', border: '1px solid rgba(56,189,248,0.15)' }}>
       <div className="px-5 py-4 flex flex-wrap gap-3 items-center justify-between" style={{ borderBottom: '1px solid rgba(56,189,248,0.1)' }}>
         <div>
-          <h3 className="font-bold text-slate-200 text-sm">Candidate Bounding Boxes</h3>
-          <p className="text-[11px] mt-0.5" style={{ color: '#64748b' }}>These are image-processing candidates, not character IDs.</p>
+          <h3 className="font-bold text-slate-200 text-sm">BBox ứng viên (candidate boxes)</h3>
+          <p className="text-[11px] mt-0.5" style={{ color: '#64748b' }}>Đây là bbox từ xử lý ảnh, không phải định danh ký tự.</p>
         </div>
         <div className="flex items-center gap-2">
           <select className="form-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ width: 180, padding: '8px 10px', fontSize: 12 }}>
-            {statuses.map((status) => <option key={status} value={status}>Status: {status}</option>)}
+            {statuses.map((status) => <option key={status} value={status}>Trạng thái: {status}</option>)}
           </select>
           <select className="form-select" value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={{ width: 170, padding: '8px 10px', fontSize: 12 }}>
-            {Object.keys(SORTERS).map((key) => <option key={key} value={key}>Sort: {key}</option>)}
+            {Object.keys(SORTERS).map((key) => <option key={key} value={key}>Sắp xếp: {key}</option>)}
           </select>
           <button onClick={exportCSV} disabled={!filtered.length} className="btn btn-sm btn-secondary disabled:opacity-40">CSV</button>
         </div>
@@ -80,7 +80,7 @@ const BoundingBoxTable = ({ boxes = [] }) => {
         <table className="w-full text-sm">
           <thead>
             <tr style={{ background: 'rgba(7,21,38,0.8)' }}>
-              {['#', 'Crop', 'Order', 'BBox', 'Area', 'Ratio', 'Fill', 'Status', 'Branch', 'Crop URL'].map((head) => (
+              {['#', 'Crop', 'Thứ tự', 'BBox', 'Area', 'Ratio', 'Fill', 'Status', 'Branch', 'Crop URL'].map((head) => (
                 <th key={head} className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-widest" style={{ color: '#64748b' }}>{head}</th>
               ))}
             </tr>
@@ -97,7 +97,7 @@ const BoundingBoxTable = ({ boxes = [] }) => {
                       <button onClick={() => setPreview(cropUrl)} className="block">
                         <img src={cropUrl} alt={`crop ${box.index}`} className="w-12 h-12 object-contain rounded-lg" style={{ background: '#040d1a', border: '1px solid rgba(56,189,248,0.12)' }} />
                       </button>
-                    ) : <span className="text-xs text-slate-500">None</span>}
+                    ) : <span className="text-xs text-slate-500">Không có</span>}
                   </td>
                   <td className="px-4 py-3 font-mono text-xs" style={{ color: '#94a3b8' }}>
                     {box.global_order} / L{box.line_index}.{box.order_in_line}
@@ -122,8 +122,8 @@ const BoundingBoxTable = ({ boxes = [] }) => {
 
       {!filtered.length && (
         <div className="py-12 text-center">
-          <p className="font-bold text-slate-400">No candidate boxes</p>
-          <p className="text-xs mt-1" style={{ color: '#64748b' }}>Try adaptive/Sauvola, lower min_area, or enable multi-branch.</p>
+          <p className="font-bold text-slate-400">Không có bbox ứng viên</p>
+          <p className="text-xs mt-1" style={{ color: '#64748b' }}>Thử adaptive/Sauvola, giảm min_area, hoặc bật multi-branch.</p>
         </div>
       )}
 
