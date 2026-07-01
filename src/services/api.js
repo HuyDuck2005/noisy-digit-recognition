@@ -23,7 +23,7 @@ const requestJson = async (url, options) => {
   try {
     response = await fetch(url, options);
   } catch (error) {
-    throw new Error(`Backend request failed: ${error.message}`);
+    throw new Error(`Không kết nối được backend: ${error.message}. Kiểm tra FastAPI đang chạy ở ${API_BASE_URL}.`);
   }
 
   if (!response.ok) {

@@ -89,24 +89,33 @@ export const DEFAULT_PARAMETERS = {
   sort_reading_order: true,
 };
 
-const preset = (label, patch) => ({ label, parameters: { ...DEFAULT_PARAMETERS, ...patch } });
+const preset = (label, desc, patch) => ({ label, desc, parameters: { ...DEFAULT_PARAMETERS, ...patch } });
 
 const PRESETS = {
-  clean_document: preset('Clean Document', {
+  auto_optimal: preset('Auto tối ưu (Auto)', 'Cân bằng cho ảnh chưa rõ mức nhiễu. Bắt đầu từ preset này nếu chưa biết chọn gì.', {
+    resize_scale: 1.5,
+    contrast_method: 'clahe',
+    denoise_method: 'median',
+    threshold_method: 'adaptive',
+    morphology_mode: 'open_close',
+    merge_close_boxes: true,
+    min_area: 25,
+  }),
+  clean_document: preset('Ảnh sạch (Clean)', 'Tài liệu rõ, nền sạch, ít nhiễu. Ưu tiên tốc độ và bbox gọn.', {
     threshold_method: 'otsu',
     contrast_method: 'clahe',
     denoise_method: 'none',
     morphology_mode: 'opening',
     min_area: 20,
   }),
-  light_noise: preset('Light Noise', {
+  light_noise: preset('Nhiễu nhẹ (Light)', 'Có vài chấm đen/trắng nhỏ. Dùng median + adaptive threshold.', {
     threshold_method: 'adaptive',
     denoise_method: 'median',
     median_kernel: 3,
     morphology_mode: 'opening',
     min_area: 30,
   }),
-  heavy_noise: preset('Heavy Noise', {
+  heavy_noise: preset('Nhiễu nặng (Heavy)', 'Ảnh nhiều chấm nhiễu, chữ vẫn tương đối rõ. Dùng NLM và lọc mạnh hơn.', {
     threshold_method: 'adaptive',
     denoise_method: 'nlm',
     nlm_h: 10,
@@ -115,7 +124,7 @@ const PRESETS = {
     closing_iterations: 1,
     min_area: 50,
   }),
-  very_heavy_noise: preset('Very Heavy Noise', {
+  very_heavy_noise: preset('Rất nhiễu (Very Heavy)', 'Ảnh mờ/nhiễu mạnh. Phóng ảnh, Sauvola, multi-branch để tăng recall.', {
     resize_scale: 2.0,
     contrast_method: 'clahe',
     denoise_method: 'nlm',
@@ -124,7 +133,7 @@ const PRESETS = {
     min_area: 60,
     multi_branch_enabled: true,
   }),
-  table_lines: preset('Table Lines', {
+  table_lines: preset('Có bảng (Table Lines)', 'Ảnh có đường kẻ ngang/dọc. Bật line removal trước khi tìm bbox.', {
     threshold_method: 'adaptive',
     denoise_method: 'median',
     morphology_mode: 'open_close',
@@ -133,21 +142,21 @@ const PRESETS = {
     horizontal_line_kernel: 30,
     vertical_line_kernel: 30,
   }),
-  thin_text: preset('Thin Text', {
+  thin_text: preset('Chữ mảnh (Thin Text)', 'Nét chữ mảnh, dễ đứt. Dùng bilateral + closing + dilation nhẹ.', {
     threshold_method: 'adaptive',
     denoise_method: 'bilateral',
     morphology_mode: 'closing',
     dilation_iterations: 1,
     min_area: 10,
   }),
-  bold_sticky_text: preset('Bold/Sticky Text', {
+  bold_sticky_text: preset('Chữ dính (Sticky)', 'Nét đậm, ký tự dễ dính nhau. Dùng erosion và đánh dấu bbox rộng.', {
     threshold_method: 'adaptive',
     denoise_method: 'median',
     morphology_mode: 'opening',
     erosion_iterations: 1,
     split_wide_boxes: true,
   }),
-  edge_gabor: preset('Edge/Gabor Experimental', {
+  edge_gabor: preset('Biên/Gabor (Edge)', 'Thử nghiệm cho chữ mờ hoặc nền texture. Dùng DoG, Gabor, contours.', {
     contrast_method: 'clahe',
     denoise_method: 'bilateral',
     edge_method: 'dog',
@@ -157,7 +166,7 @@ const PRESETS = {
     contours_enabled: true,
     multi_branch_enabled: true,
   }),
-  multi_branch: preset('Multi-Branch Max Recall', {
+  multi_branch: preset('Recall cao (Multi-Branch)', 'Bắt nhiều bbox nhất có thể. Chậm hơn, phù hợp ảnh khó.', {
     resize_scale: 2.0,
     contrast_method: 'clahe',
     denoise_method: 'nlm',
@@ -189,8 +198,8 @@ const LOADING_STEPS = [
 const ImageProcess = () => {
   const [imageFile, setImageFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
-  const [parameters, setParameters] = useState(PRESETS.light_noise.parameters);
-  const [presetId, setPresetId] = useState('light_noise');
+  const [parameters, setParameters] = useState(PRESETS.auto_optimal.parameters);
+  const [presetId, setPresetId] = useState('auto_optimal');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -284,11 +293,15 @@ const ImageProcess = () => {
           </div>
 
           <div className="card" style={{ padding: 20 }}>
-            <h3 className="card-title mb-3">Preset nhanh</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="mb-3">
+              <h3 className="card-title">Preset nhanh</h3>
+              <p className="card-sub">Chọn theo tình trạng ảnh. Có thể chỉnh sâu bằng Settings sau đó.</p>
+            </div>
+            <div className="preset-grid">
               {Object.entries(PRESETS).map(([id, item]) => (
-                <button key={id} onClick={() => selectPreset(id)} className={`btn btn-sm ${presetId === id ? 'btn-primary' : 'btn-secondary'}`}>
-                  {item.label}
+                <button key={id} onClick={() => selectPreset(id)} className={`preset-card ${presetId === id ? 'active' : ''}`}>
+                  <strong>{item.label}</strong>
+                  <span>{item.desc}</span>
                 </button>
               ))}
             </div>

@@ -14,6 +14,38 @@ const sections = [
   ['fusion', 'Gộp', 'Merge / fusion'],
 ];
 
+const AUTO_OPTIMAL_PATCH = {
+  resize_scale: 1.5,
+  contrast_method: 'clahe',
+  clahe_clip_limit: 2.2,
+  illumination_correction: 'none',
+  denoise_method: 'median',
+  median_kernel: 3,
+  sharpen_method: 'none',
+  edge_method: 'none',
+  threshold_method: 'adaptive',
+  adaptive_method: 'gaussian',
+  adaptive_block_size: 31,
+  adaptive_c: 11,
+  morphology_mode: 'open_close',
+  kernel_shape: 'rect',
+  kernel_size: [2, 2],
+  opening_iterations: 1,
+  closing_iterations: 1,
+  remove_lines: false,
+  bbox_methods: ['connected_components'],
+  contours_enabled: false,
+  mser_enabled: false,
+  min_area: 25,
+  min_width: 2,
+  min_height: 5,
+  min_fill_ratio: 0.02,
+  padding: 2,
+  merge_close_boxes: true,
+  split_wide_boxes: false,
+  multi_branch_enabled: false,
+};
+
 const ParameterPanel = ({ parameters, onSave, onCancel, disabled, presetName }) => {
   const [draft, setDraft] = useState(parameters);
   const [active, setActive] = useState('size');
@@ -31,6 +63,10 @@ const ParameterPanel = ({ parameters, onSave, onCancel, disabled, presetName }) 
   };
 
   const activeTitle = useMemo(() => sections.find(([id]) => id === active), [active]);
+  const applyAutoOptimal = () => {
+    setDraft((current) => ({ ...current, ...AUTO_OPTIMAL_PATCH }));
+    setActive('threshold');
+  };
 
   return (
     <div className="settings-backdrop" role="presentation" onMouseDown={onCancel}>
@@ -40,7 +76,10 @@ const ParameterPanel = ({ parameters, onSave, onCancel, disabled, presetName }) 
             <h3>Cài đặt pipeline (Settings)</h3>
             <p>Preset: {presetName}. Chỉ tạo bbox ứng viên (candidate boxes).</p>
           </div>
-          <button type="button" className="settings-close" onClick={onCancel} aria-label="Đóng cài đặt">×</button>
+          <div className="settings-head-actions">
+            <button type="button" className="btn btn-sm btn-secondary" onClick={applyAutoOptimal}>Auto tối ưu</button>
+            <button type="button" className="settings-close" onClick={onCancel} aria-label="Đóng cài đặt">×</button>
+          </div>
         </div>
 
         <div className="settings-body">
@@ -165,7 +204,7 @@ const ParameterPanel = ({ parameters, onSave, onCancel, disabled, presetName }) 
         </div>
 
         <div className="settings-footer">
-          <p>Thay đổi chỉ áp dụng sau khi bấm Lưu cài đặt (Save).</p>
+          <p>`Auto tối ưu` áp bộ tham số cân bằng cho ảnh nhiễu vừa. Muốn xử lý bảng, bật line removal hoặc chọn preset Có bảng.</p>
           <div className="flex gap-2">
             <button type="button" onClick={onCancel} className="btn btn-sm btn-ghost">Hủy</button>
             <button type="button" onClick={() => onSave(draft)} disabled={disabled} className="btn btn-sm btn-primary">Lưu cài đặt</button>
