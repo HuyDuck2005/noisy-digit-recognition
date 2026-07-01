@@ -27,7 +27,7 @@ const History = () => {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="page-eyebrow">History</h2>
-          <h1 className="page-title">Local Processing History</h1>
+          <h1 className="page-title">Local BBox Runs</h1>
           <p className="page-sub">Local history only. No database yet.</p>
         </div>
         <button onClick={clearHistory} disabled={!history.length} className="btn btn-sm btn-ghost disabled:opacity-40">Clear local history</button>
@@ -48,11 +48,11 @@ const History = () => {
               <tr>
                 <th>Result ID</th>
                 <th>File</th>
-                <th>Boxes</th>
-                <th>Mock confidence</th>
-                <th>Low confidence</th>
+                <th>Candidate boxes</th>
+                <th>Connected boxes</th>
+                <th>Removed noise</th>
                 <th>Time</th>
-                <th>Created</th>
+                <th>Mode</th>
                 <th>Artifacts</th>
               </tr>
             </thead>
@@ -61,11 +61,11 @@ const History = () => {
                 <tr key={item.result_id}>
                   <td className="font-mono text-xs" style={{ color: '#38bdf8' }}>{item.result_id}</td>
                   <td>{item.filename}</td>
-                  <td>{item.detected_boxes}</td>
-                  <td>{Math.round((item.average_confidence || 0) * 100)}%</td>
-                  <td>{item.low_confidence_count}</td>
+                  <td>{item.candidate_boxes ?? 0}</td>
+                  <td>{item.possible_connected_characters ?? 0}</td>
+                  <td>{item.removed_noise_components ?? 0}</td>
                   <td>{item.processing_time_ms}ms</td>
-                  <td>{formatDate(item.created_at)}</td>
+                  <td>{item.mode}</td>
                   <td>
                     <div className="flex gap-2">
                       {item.output_image_url && <a className="btn btn-sm btn-secondary" href={item.output_image_url} target="_blank" rel="noreferrer">Image</a>}
@@ -81,7 +81,7 @@ const History = () => {
         {!filtered.length && (
           <div className="py-14 text-center">
             <p className="font-bold text-slate-400">No local history found</p>
-            <p className="text-xs mt-1" style={{ color: '#64748b' }}>Run the OpenCV pipeline from the process page to add entries here.</p>
+            <p className="text-xs mt-1" style={{ color: '#64748b' }}>Run the Advanced BBox Pipeline to add entries here.</p>
           </div>
         )}
       </div>
@@ -95,13 +95,6 @@ const readHistory = () => {
   } catch {
     return [];
   }
-};
-
-const formatDate = (value) => {
-  if (!value) return 'n/a';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString();
 };
 
 export default History;

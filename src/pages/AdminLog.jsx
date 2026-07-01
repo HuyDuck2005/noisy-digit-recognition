@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 
 const LOGS = [
-  { time: 'local', level: 'INFO', msg: 'OpenCV Base Pipeline is the active phase.', src: 'pipeline' },
-  { time: 'local', level: 'INFO', msg: 'Recognizer is deterministic mock. No trained model yet.', src: 'recognizer' },
-  { time: 'local', level: 'INFO', msg: 'Datasets are not downloaded in this MVP phase.', src: 'datasets' },
+  { time: 'local', level: 'INFO', msg: 'Advanced Classical CV BBox Pipeline is the active phase.', src: 'pipeline' },
+  { time: 'local', level: 'INFO', msg: 'Recognition is disabled. Candidate boxes only.', src: 'bbox' },
+  { time: 'local', level: 'INFO', msg: 'Datasets are not required in this phase.', src: 'datasets' },
 ];
 
 const USERS = [
@@ -26,20 +26,20 @@ const AdminLog = () => {
         <div>
           <h2 className="page-eyebrow">Administrator</h2>
           <h1 className="page-title">System Status</h1>
-          <p className="page-sub">Mock auth, OpenCV Base Pipeline, Dataset Not Downloaded.</p>
+          <p className="page-sub">Mock auth, OpenCV BBox Pipeline, dataset not required.</p>
         </div>
         <span className="badge badge-red">ADMIN ONLY</span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <Info label="Pipeline" value="OpenCV Base" />
-        <Info label="Recognizer" value="Mock" />
-        <Info label="Dataset" value="Not downloaded" />
-        <Info label="Training" value="Not available" />
+        <Info label="Pipeline" value="Advanced CV" />
+        <Info label="Output" value="Candidate boxes" />
+        <Info label="Dataset" value="Not required" />
+        <Info label="Training" value="Future phase" />
       </div>
 
       <div className="flex gap-2">
-        {[['logs', 'System log'], ['users', 'Users'], ['model', 'Recognizer']].map(([id, label]) => (
+        {[['logs', 'System log'], ['users', 'Users'], ['model', 'Future training']].map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)} className={`btn btn-sm ${tab === id ? 'btn-primary' : 'btn-ghost'}`}>
             {label}
           </button>
@@ -86,8 +86,8 @@ const AdminLog = () => {
 
       {tab === 'model' && (
         <div className="card">
-          <h3 className="card-title">opencv-cc-mock-recognizer-v1</h3>
-          <p className="card-sub mt-2">No trained model yet. Labels and confidence values are deterministic mock outputs from simple image features and hashes.</p>
+          <h3 className="card-title">No trained model</h3>
+          <p className="card-sub mt-2">Current work is preprocessing and candidate bbox extraction. Training/export happens after the bbox baseline is stable.</p>
         </div>
       )}
     </div>

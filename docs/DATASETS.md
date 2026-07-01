@@ -1,22 +1,23 @@
-# Dataset Plan
+# Dataset Notes
 
-The current MVP does not need any dataset to run.
+The current phase does not require a dataset.
 
-Current phase:
+Active phase:
 
-- OpenCV Base Pipeline.
-- No model training.
-- No deep learning recognizer.
-- Deterministic mock recognizer only.
-- No dataset downloaded.
+- Advanced Classical CV.
+- OpenCV BBox Pipeline.
+- Candidate bounding boxes only.
+- No trained model.
+- Recognition disabled.
+- Dataset not required for this phase.
 
-Future datasets:
+Future datasets can be added after the bbox baseline is stable:
 
-- SynthText: future character-level bounding-box pretraining.
-- VinText: future Vietnamese scene text fine-tuning.
-- Chars74K: future Latin digit/letter classifier baseline.
-- TextOCR: future real-world scene text robustness.
-- NOD: future noisy OCR robustness.
+- SynthText: future synthetic text detection data.
+- VinText: future Vietnamese scene text data.
+- Chars74K: future character and digit samples.
+- TextOCR: future real-world text-image data.
+- NOD: future noisy document or noisy text robustness data.
 
 Suggested local folder layout:
 
@@ -30,7 +31,7 @@ datasets/
   synthetic_vietnamese/
 ```
 
-Do not commit datasets or trained model artifacts to git. Keep large archives and model files local or in external storage.
+Do not commit datasets or model artifacts to git. Keep large archives and runtime artifacts local or in external storage.
 
 Useful check command:
 

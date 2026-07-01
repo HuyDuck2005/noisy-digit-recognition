@@ -30,7 +30,7 @@ const Login = () => {
             <span className="text-3xl font-black text-white tracking-wider">ND</span>
           </div>
           <h2 className="text-3xl font-bold text-white tracking-wide mb-1">Sign in</h2>
-          <p className="text-cyan-400/80 text-base font-medium">Mock auth for OpenCV MVP</p>
+          <p className="text-cyan-400/80 text-base font-medium">Mock auth for Advanced CV BBox Lab</p>
         </div>
 
         <form className="flex flex-col gap-5" onSubmit={handleSubmit}>

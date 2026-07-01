@@ -1,13 +1,14 @@
 import json
+from pathlib import Path
 
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile, status
 from fastapi.responses import FileResponse
 
 from app.schemas.process import ProcessResult
-from app.services.image_processing_service import RESULTS_ROOT
-from app.services.mock_process_service import (
+from app.services.advanced_image_processing_service import (
     ALLOWED_CONTENT_TYPES,
     MAX_UPLOAD_SIZE_BYTES,
+    RESULTS_ROOT,
     create_process_result,
 )
 
@@ -47,7 +48,13 @@ async def process_image(
 
 @router.get("/output-txt/{result_id}")
 async def get_output_text_file(result_id: str) -> FileResponse:
-    txt_path = (RESULTS_ROOT / result_id / "output.txt").resolve()
+    if "/" in result_id or "\\" in result_id or not result_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid result_id.",
+        )
+
+    txt_path = Path(RESULTS_ROOT / result_id / "output.txt").resolve()
     results_root = RESULTS_ROOT.resolve()
 
     if results_root not in txt_path.parents:

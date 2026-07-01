@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi.responses import FileResponse
 
-from app.services.image_processing_service import get_crop_image_path, get_pipeline_image_path
+from app.services.advanced_image_processing_service import get_crop_image_path, get_pipeline_image_path
 
 
 router = APIRouter()

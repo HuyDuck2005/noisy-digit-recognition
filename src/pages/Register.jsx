@@ -32,7 +32,7 @@ const Register = () => {
           <span className="text-2xl font-black text-white">ND</span>
         </div>
         <h2 className="text-2xl font-bold text-white">Create local profile</h2>
-        <p className="text-slate-400 text-sm mt-2">Mock auth for OpenCV Base Pipeline.</p>
+        <p className="text-slate-400 text-sm mt-2">Mock auth for Advanced CV BBox Lab.</p>
       </div>
 
       <form className="flex flex-col gap-4" onSubmit={handleSubmit}>

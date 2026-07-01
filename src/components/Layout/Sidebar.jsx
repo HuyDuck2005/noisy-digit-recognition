@@ -23,19 +23,19 @@ const Sidebar = () => {
           <span className="text-white font-black tracking-wider">ND</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-white font-bold text-lg tracking-wide">Noisy<span className="text-cyan-400">Digits</span></span>
-          <span className="text-slate-500 text-[10px] uppercase font-bold tracking-widest">OpenCV MVP</span>
+          <span className="text-white font-bold text-lg tracking-wide">BBox<span className="text-cyan-400">Lab</span></span>
+          <span className="text-slate-500 text-[10px] uppercase font-bold tracking-widest">Advanced CV</span>
         </div>
       </div>
 
       <nav className="flex-1 px-4 py-6 overflow-y-auto custom-scrollbar">
         <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 px-2">Main</div>
         <NavItem to="/dashboard" label="Dashboard" active={isActive('/dashboard') || isActive('/')} />
-        <NavItem to="/process" label="Image Process" active={isActive('/process')} />
+        <NavItem to="/process" label="BBox Pipeline" active={isActive('/process')} />
         <NavItem to="/history" label="History" active={isActive('/history')} />
 
         <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 px-2 mt-8">System</div>
-        <NavItem to="/admin/models" label="Model & Dataset" active={isAdminActive()} />
+        <NavItem to="/admin/models" label="Future Training" active={isAdminActive()} />
       </nav>
 
       <div className="p-4 border-t border-white/5 bg-[#040d1a]/50">

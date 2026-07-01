@@ -8,11 +8,11 @@ router = APIRouter()
 def get_dataset_status() -> dict:
     return {
         "downloaded": False,
-        "current_phase": "opencv_base_no_training",
-        "model_status": "mock_recognizer",
+        "current_phase": "opencv_advanced_bbox_no_training",
+        "model_status": "recognition_disabled",
         "message": (
-            "No dataset downloaded yet. Current backend uses OpenCV connected "
-            "components and deterministic mock recognition."
+            "No dataset required or downloaded. Current backend uses advanced "
+            "classical CV preprocessing and candidate bounding box extraction only."
         ),
         "datasets": [
             {

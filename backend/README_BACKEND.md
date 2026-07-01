@@ -1,6 +1,6 @@
-# Backend - Noisy Digit Recognition
+# Backend - Advanced Classical CV BBox Pipeline
 
-Current phase: OpenCV Base Pipeline. No dataset is downloaded. No deep learning model has been trained. Labels and confidence values are produced by a deterministic mock recognizer.
+Current phase: OpenCV BBox Pipeline. No trained model, no dataset download, no text-recognition engine call, no external reasoning service call. Recognition is disabled and every box label is `"?"`.
 
 ## Setup
 
@@ -41,8 +41,6 @@ POST http://127.0.0.1:8000/api/process
 
 Request type: `multipart/form-data`
 
-Fields:
-
 | Field | Type | Required | Notes |
 |---|---|---:|---|
 | `image` | File | Yes | JPG, JPEG, or PNG, max 10MB |
@@ -52,21 +50,25 @@ Example parameters:
 
 ```json
 {
-  "threshold_mode": "otsu",
-  "blur_type": "median",
-  "blur_kernel": 3,
+  "resize_scale": 2.0,
+  "contrast_method": "clahe",
+  "denoise_method": "nlm",
+  "threshold_method": "sauvola",
   "morphology_mode": "open_close",
-  "min_area": 50,
-  "padding": 2,
-  "connectivity": 8,
-  "invert": true
+  "gabor_enabled": true,
+  "contours_enabled": true,
+  "mser_enabled": true,
+  "multi_branch_enabled": true,
+  "min_area": 15
 }
 ```
 
 Returned response includes:
 
 - `result_id`
-- `status`
+- `mode = "opencv_advanced_bbox"`
+- `model_trained = false`
+- `recognition_enabled = false`
 - `image_info`
 - `parameters`
 - `statistics`
@@ -74,10 +76,31 @@ Returned response includes:
 - `pipeline_images`
 - `output_image_url`
 - `output_txt_url`
-- `model_version`
-- `llm_comment`
+- `system_comment`
 
-`llm_comment` is kept for frontend compatibility, but it is system feedback. No LLM API is called.
+## Pipeline
+
+```text
+upload
+  -> validate image type and size
+  -> decode BGR
+  -> resize/upscale
+  -> grayscale
+  -> contrast enhancement
+  -> illumination correction
+  -> denoising
+  -> sharpening
+  -> edge and Gabor branches
+  -> Otsu/adaptive/Sauvola/Niblack threshold masks
+  -> morphology
+  -> line removal
+  -> connected components, contours, MSER
+  -> filter/merge/fuse/NMS
+  -> mark possible connected characters
+  -> optional wide-box split
+  -> reading-order sort
+  -> crops, output.png, output.txt
+```
 
 ## Generated Artifacts
 
@@ -87,15 +110,31 @@ Files are stored under:
 backend/storage/results/{result_id}/
 ```
 
-Pipeline files:
+Important files:
 
 ```text
 original.png
 grayscale.png
+contrast.png
+illumination.png
 denoised.png
+sharpened.png
+edge_map.png
+dog.png
+log.png
+gabor_response.png
+gabor_binary.png
 binary.png
+binary_otsu.png
+binary_adaptive.png
+binary_sauvola.png
+binary_niblack.png
 morphology.png
+line_mask.png
+no_lines.png
 components.png
+mser_regions.png
+fused_boxes.png
 output.png
 output.txt
 crops/{index}.png
@@ -104,16 +143,12 @@ crops/{index}.png
 Image URLs:
 
 ```text
-GET /api/images/original/{result_id}
-GET /api/images/grayscale/{result_id}
-GET /api/images/denoised/{result_id}
-GET /api/images/binary/{result_id}
-GET /api/images/morphology/{result_id}
-GET /api/images/components/{result_id}
-GET /api/images/output/{result_id}
+GET /api/images/{stage}/{result_id}
 GET /api/crops/{result_id}/{index}.png
 GET /api/output-txt/{result_id}
 ```
+
+All artifact routes validate `result_id` and resolve paths inside `backend/storage/results`.
 
 ## Dataset Status
 
