@@ -1,50 +1,52 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
-import MainLayout from './layouts/MainLayout';
 import AuthLayout from './layouts/AuthLayout';
+import MainLayout from './layouts/MainLayout';
 
-import Dashboard from './pages/Dashboard';
-import ImageProcess from './pages/ImageProcess';
-import History from './pages/History';
 import AdminLog from './pages/AdminLog';
+import Dashboard from './pages/Dashboard';
+import History from './pages/History';
+import ImageProcess from './pages/ImageProcess';
 import ModelManager from './pages/ModelManager';
-import Login from './pages/Auth/Login';
 import Register from './pages/Register';
+import Login from './pages/Auth/Login';
 
-// Guard: chưa login thì về /login
 const PrivateRoute = ({ children }) => {
   const { user } = useAuth();
   return user ? children : <Navigate to="/login" replace />;
 };
 
-// Guard: đã login thì không vào /login nữa
 const PublicRoute = ({ children }) => {
   const { user } = useAuth();
   return !user ? children : <Navigate to="/dashboard" replace />;
 };
 
+const AdminRoute = ({ children }) => {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role !== 'Administrator') return <Navigate to="/dashboard" replace />;
+  return children;
+};
+
 function AppRoutes() {
   return (
     <Routes>
-      {/* Auth pages */}
       <Route element={<AuthLayout />}>
-        <Route path="/login"    element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
       </Route>
 
-      {/* App pages — yêu cầu đăng nhập */}
       <Route element={<PrivateRoute><MainLayout /></PrivateRoute>}>
-        <Route path="/"               element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard"      element={<Dashboard />} />
-        <Route path="/process"        element={<ImageProcess />} />
-        <Route path="/history"        element={<History />} />
-        <Route path="/admin/logs"     element={<AdminLog />} />
-        <Route path="/admin/models"   element={<ModelManager />} />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/process" element={<ImageProcess />} />
+        <Route path="/history" element={<History />} />
+        <Route path="/admin/logs" element={<AdminRoute><AdminLog /></AdminRoute>} />
+        <Route path="/admin/models" element={<AdminRoute><ModelManager /></AdminRoute>} />
       </Route>
 
-      {/* Fallback */}
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );

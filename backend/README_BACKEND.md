@@ -1,14 +1,10 @@
-# Backend Noisy Digit Recognition
+# Backend - Advanced Classical CV BBox Pipeline
 
-Backend được xây dựng bằng FastAPI.
+Current phase: OpenCV BBox Pipeline. No trained model, no dataset download, no text-recognition engine call, no external reasoning service call. Recognition is disabled and every box label is `"?"`.
 
-## Yêu cầu
+## Setup
 
-- Python 3.10+
-
-## Cài đặt
-
-Chạy từ thư mục gốc của repo:
+Run from the repository root:
 
 ```powershell
 cd backend
@@ -19,114 +15,153 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-Nếu cần file cấu hình local, có thể tạo từ file mẫu:
+## Run
 
 ```powershell
-Copy-Item .env.example .env
-```
-
-Chỉ giữ `.env` trên máy local. File `.env.example` là file mẫu và có thể commit lên GitHub trừ khi clone về
-
-## Chạy backend
-```
-uvicorn app.main:app --reload --port 8000
-
-Nếu Windows báo lỗi launcher do đường dẫn project có dấu tiếng Việt, chạy uvicorn qua Python:
-
-```powershell
-$env:PYTHONUTF8 = "1"
 python -m uvicorn app.main:app --reload --port 8000
 ```
 
-## Kiểm tra health
+## Health
 
-```
+```text
 GET http://127.0.0.1:8000/api/health
 ```
 
-Response mong đợi:
+Expected:
 
 ```json
 {"status":"ok"}
 ```
 
-## API xử lý ảnh hiện tại
+## Process Image
 
-Endpoint demo đầu tiên nhận ảnh upload, đọc ảnh bằng OpenCV, lưu ảnh gốc, ảnh grayscale, ảnh binary, ảnh morphology và ảnh connected components. Response trả về theo cấu trúc `ProcessResult` để frontend có thể dùng dần.
-
-```
+```text
 POST http://127.0.0.1:8000/api/process
 ```
 
-Các field trong form:
+Request type: `multipart/form-data`
 
-| Field | Kiểu | Bắt buộc | Ghi chú |
+| Field | Type | Required | Notes |
 |---|---|---:|---|
-| `image` | File | Có | Ảnh JPG, JPEG hoặc PNG. Field `file` cũng được chấp nhận như alias. |
-| `parameters` | Text | Không | JSON object chứa tham số pipeline. Có thể để trống. |
+| `image` | File | Yes | JPG, JPEG, or PNG, max 10MB |
+| `parameters` | Text | No | JSON object |
 
-Ví dụ `parameters`:
+Example parameters:
 
 ```json
-{"threshold_mode":"otsu","min_area":50}
+{
+  "resize_scale": 2.0,
+  "contrast_method": "clahe",
+  "denoise_method": "nlm",
+  "threshold_method": "sauvola",
+  "morphology_mode": "open_close",
+  "gabor_enabled": true,
+  "contours_enabled": true,
+  "mser_enabled": true,
+  "multi_branch_enabled": true,
+  "min_area": 15
+}
 ```
 
-Có thể test bằng FastAPI docs:
+Returned response includes:
+
+- `result_id`
+- `mode = "opencv_advanced_bbox"`
+- `model_trained = false`
+- `recognition_enabled = false`
+- `image_info`
+- `parameters`
+- `statistics`
+- `boxes`
+- `pipeline_images`
+- `output_image_url`
+- `output_txt_url`
+- `system_comment`
+
+## Pipeline
 
 ```text
-http://127.0.0.1:8000/docs
+upload
+  -> validate image type and size
+  -> decode BGR
+  -> resize/upscale
+  -> grayscale
+  -> contrast enhancement
+  -> illumination correction
+  -> denoising
+  -> sharpening
+  -> edge and Gabor branches
+  -> Otsu/adaptive/Sauvola/Niblack threshold masks
+  -> morphology
+  -> line removal
+  -> connected components, contours, MSER
+  -> filter/merge/fuse/NMS
+  -> mark possible connected characters
+  -> optional wide-box split
+  -> reading-order sort
+  -> crops, output.png, output.txt
 ```
 
-## Ảnh pipeline đã lưu
+## Generated Artifacts
 
-Sau khi gọi `POST /api/process`, backend lưu ảnh vào:
+Files are stored under:
 
 ```text
 backend/storage/results/{result_id}/
 ```
 
-Các ảnh hiện có:
+Important files:
 
 ```text
 original.png
 grayscale.png
+contrast.png
+illumination.png
+denoised.png
+sharpened.png
+edge_map.png
+dog.png
+log.png
+gabor_response.png
+gabor_binary.png
 binary.png
+binary_otsu.png
+binary_adaptive.png
+binary_sauvola.png
+binary_niblack.png
 morphology.png
+line_mask.png
+no_lines.png
 components.png
+mser_regions.png
+fused_boxes.png
+output.png
+output.txt
+crops/{index}.png
 ```
 
-Response trả về URL đầy đủ để mở ảnh trong browser:
+Image URLs:
 
 ```text
-GET /api/images/original/{result_id}
-GET /api/images/grayscale/{result_id}
-GET /api/images/binary/{result_id}
-GET /api/images/morphology/{result_id}
-GET /api/images/components/{result_id}
+GET /api/images/{stage}/{result_id}
+GET /api/crops/{result_id}/{index}.png
+GET /api/output-txt/{result_id}
 ```
 
-Response cũng có `debug_links` để copy link nhanh khi test thủ công.
+All artifact routes validate `result_id` and resolve paths inside `backend/storage/results`.
 
-## Trạng thái hiện tại
+## Dataset Status
 
-Đã làm thật:
+```text
+GET /api/datasets/status
+```
 
-- Upload ảnh.
-- Decode ảnh bằng OpenCV.
-- Lấy `width`, `height`, `file_size`, `format`.
-- Lưu ảnh gốc.
-- Chuyển ảnh sang grayscale.
-- Tạo ảnh binary bằng Otsu threshold.
-- Tạo ảnh morphology mặc định để giảm nhiễu foreground nhỏ.
-- Tạo ảnh connected components để xem các vùng liên thông.
-- Trả URL để mở ảnh `original`, `grayscale`, `binary`, `morphology`, `components`.
+This only reports status. It never downloads datasets.
 
-Vẫn còn mock hoặc chưa làm:
+## Dataset Folder Check
 
-- Bounding boxes thật.
-- Output image có vẽ bounding box.
-- File `output.txt`.
-- Label và confidence từ CNN.
-- LLM comment thật.
+```powershell
+python backend/scripts/check_datasets.py
+```
 
-Hiện tại `output_image_url` tạm trỏ tới ảnh gốc đã lưu. Sau khi có bước detect bounding box thật, URL này sẽ trỏ tới ảnh output có bounding box.
+This only checks local folders. It never downloads data.

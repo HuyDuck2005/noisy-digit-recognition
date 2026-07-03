@@ -1,169 +1,118 @@
-// src/components/Result/BoundingBoxTable.jsx
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { resolveApiUrl } from '../../services/api';
 
-const confidenceColor = (c) => {
-  if (c >= 0.85) return { bg: 'rgba(34,197,94,0.12)', text: '#86efac', bar: '#22c55e', label: 'Cao' };
-  if (c >= 0.6) return { bg: 'rgba(234,179,8,0.12)', text: '#fde047', bar: '#eab308', label: 'Trung bình' };
-  return { bg: 'rgba(239,68,68,0.12)', text: '#fca5a5', bar: '#ef4444', label: 'Thấp' };
+const SORTERS = {
+  index: (a, b) => a.index - b.index,
+  line: (a, b) => (a.line_index - b.line_index) || (a.order_in_line - b.order_in_line),
+  x: (a, b) => a.x - b.x,
+  y: (a, b) => a.y - b.y,
+  area: (a, b) => b.area - a.area,
+  aspect_ratio: (a, b) => b.aspect_ratio - a.aspect_ratio,
+  fill_ratio: (a, b) => b.fill_ratio - a.fill_ratio,
+  status: (a, b) => String(a.status).localeCompare(String(b.status)),
 };
 
-const BoundingBoxTable = ({ boxes }) => {
-  const [editingIndex, setEditingIndex] = useState(null);
-  const [customLabels, setCustomLabels] = useState({});
+const statusStyle = (status) => {
+  if (status === 'candidate') return { color: '#86efac', bg: 'rgba(34,197,94,0.12)', border: 'rgba(34,197,94,0.3)' };
+  if (status === 'possible_connected_characters') return { color: '#fdba74', bg: 'rgba(249,115,22,0.12)', border: 'rgba(249,115,22,0.3)' };
+  return { color: '#fca5a5', bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.3)' };
+};
+
+const BoundingBoxTable = ({ boxes = [] }) => {
   const [sortBy, setSortBy] = useState('index');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [preview, setPreview] = useState(null);
 
-  const defaultBoxes = boxes || [
-    { index: 1, x: 12, y: 35, width: 24, height: 40, area: 960, label: '7', confidence: 0.94 },
-    { index: 2, x: 80, y: 31, width: 22, height: 39, area: 858, label: 'A', confidence: 0.88 },
-    { index: 3, x: 140, y: 29, width: 25, height: 42, area: 1050, label: 'B', confidence: 0.55 },
-  ];
+  const statuses = useMemo(() => ['all', ...Array.from(new Set(boxes.map((box) => box.status)))], [boxes]);
+  const filtered = useMemo(() => {
+    const rows = statusFilter === 'all' ? boxes : boxes.filter((box) => box.status === statusFilter);
+    return [...rows].sort(SORTERS[sortBy] || SORTERS.index);
+  }, [boxes, sortBy, statusFilter]);
 
-  const sorted = [...defaultBoxes].sort((a, b) => {
-    if (sortBy === 'confidence') return b.confidence - a.confidence;
-    if (sortBy === 'label') return (a.label || '').localeCompare(b.label || '');
-    return a.index - b.index;
-  });
-
-  const handleExportCSV = () => {
-    const rows = [['#', 'X', 'Y', 'Rộng', 'Cao', 'Diện tích', 'Nhãn', 'Độ tin cậy']];
-    defaultBoxes.forEach((b) =>
-      rows.push([b.index, b.x, b.y, b.width, b.height, b.area, customLabels[b.index] ?? b.label, b.confidence])
-    );
-    const csv = rows.map((r) => r.join(',')).join('\n');
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    const a = document.createElement('a'); a.href = url; a.download = 'bounding_boxes.csv'; a.click();
+  const exportCSV = () => {
+    const rows = [
+      ['index', 'global_order', 'line_index', 'order_in_line', 'x', 'y', 'width', 'height', 'area', 'aspect_ratio', 'fill_ratio', 'status', 'source_branch', 'crop_url'],
+      ...filtered.map((box) => [
+        box.index,
+        box.global_order,
+        box.line_index,
+        box.order_in_line,
+        box.x,
+        box.y,
+        box.width,
+        box.height,
+        box.area,
+        box.aspect_ratio,
+        box.fill_ratio,
+        box.status,
+        box.source_branch || '',
+        box.crop_url || '',
+      ]),
+    ];
+    const csv = rows.map((row) => row.map((cell) => `"${String(cell ?? '').replaceAll('"', '""')}"`).join(',')).join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'candidate_boxes.csv';
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
-    <div
-      className="rounded-2xl overflow-hidden"
-      style={{ background: 'rgba(13,30,60,0.7)', border: '1px solid rgba(56,189,248,0.15)' }}
-    >
-      {/* Header */}
-      <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(56,189,248,0.1)' }}>
+    <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(13,30,60,0.7)', border: '1px solid rgba(56,189,248,0.15)' }}>
+      <div className="px-5 py-4 flex flex-wrap gap-3 items-center justify-between" style={{ borderBottom: '1px solid rgba(56,189,248,0.1)' }}>
         <div>
-          <h3 className="font-bold text-slate-200 text-sm">Bảng Tọa Độ & Nhãn Dự Đoán</h3>
-          <p className="text-[11px] mt-0.5" style={{ color: '#475569' }}>
-            {defaultBoxes.length} ký tự · Sắp xếp theo:{' '}
-            {['index', 'confidence', 'label'].map((s) => (
-              <button
-                key={s}
-                onClick={() => setSortBy(s)}
-                className="ml-1 underline transition-colors"
-                style={{ color: sortBy === s ? '#2dd4bf' : '#64748b' }}
-              >
-                {s === 'index' ? 'thứ tự' : s === 'confidence' ? 'độ tin cậy' : 'nhãn'}
-              </button>
-            ))}
-          </p>
+          <h3 className="font-bold text-slate-200 text-sm">BBox ứng viên (candidate boxes)</h3>
+          <p className="text-[11px] mt-0.5" style={{ color: '#64748b' }}>Đây là bbox từ xử lý ảnh, không phải định danh ký tự.</p>
         </div>
-        <button
-          onClick={handleExportCSV}
-          className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-all hover:scale-105"
-          style={{ background: 'rgba(45,212,191,0.1)', color: '#2dd4bf', border: '1px solid rgba(45,212,191,0.25)' }}
-        >
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
-          CSV
-        </button>
+        <div className="flex items-center gap-2">
+          <select className="form-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ width: 180, padding: '8px 10px', fontSize: 12 }}>
+            {statuses.map((status) => <option key={status} value={status}>Trạng thái: {status}</option>)}
+          </select>
+          <select className="form-select" value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={{ width: 170, padding: '8px 10px', fontSize: 12 }}>
+            {Object.keys(SORTERS).map((key) => <option key={key} value={key}>Sắp xếp: {key}</option>)}
+          </select>
+          <button onClick={exportCSV} disabled={!filtered.length} className="btn btn-sm btn-secondary disabled:opacity-40">CSV</button>
+        </div>
       </div>
 
-      {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr style={{ background: 'rgba(7,21,38,0.8)' }}>
-              {['#', 'Tọa độ', 'Kích thước', 'Diện tích', 'Độ tin cậy', 'Nhãn CNN', 'Hành động'].map((h) => (
-                <th key={h} className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-widest" style={{ color: '#475569' }}>{h}</th>
+              {['#', 'Crop', 'Thứ tự', 'BBox', 'Area', 'Ratio', 'Fill', 'Status', 'Branch', 'Crop URL'].map((head) => (
+                <th key={head} className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-widest" style={{ color: '#64748b' }}>{head}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {sorted.map((box, i) => {
-              const conf = confidenceColor(box.confidence);
-              const displayLabel = customLabels[box.index] ?? box.label;
-              const isEdited = customLabels[box.index] !== undefined;
-              const isEditing = editingIndex === box.index;
-
+            {filtered.map((box, rowIndex) => {
+              const style = statusStyle(box.status);
+              const cropUrl = resolveApiUrl(box.crop_url);
               return (
-                <tr
-                  key={box.index}
-                  className="transition-all duration-150"
-                  style={{
-                    borderTop: '1px solid rgba(56,189,248,0.06)',
-                    background: i % 2 === 0 ? 'rgba(13,30,60,0.3)' : 'transparent',
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(56,189,248,0.06)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = i % 2 === 0 ? 'rgba(13,30,60,0.3)' : 'transparent'; }}
-                >
+                <tr key={`${box.index}-${box.crop_url}`} style={{ borderTop: '1px solid rgba(56,189,248,0.06)', background: rowIndex % 2 === 0 ? 'rgba(13,30,60,0.3)' : 'transparent' }}>
+                  <td className="px-4 py-3 font-mono text-xs" style={{ color: '#38bdf8' }}>#{box.index}</td>
                   <td className="px-4 py-3">
-                    <span className="font-mono text-xs font-bold" style={{ color: '#38bdf8' }}>#{box.index}</span>
+                    {box.crop_url ? (
+                      <button onClick={() => setPreview(cropUrl)} className="block">
+                        <img src={cropUrl} alt={`crop ${box.index}`} className="w-12 h-12 object-contain rounded-lg" style={{ background: '#040d1a', border: '1px solid rgba(56,189,248,0.12)' }} />
+                      </button>
+                    ) : <span className="text-xs text-slate-500">Không có</span>}
                   </td>
                   <td className="px-4 py-3 font-mono text-xs" style={{ color: '#94a3b8' }}>
-                    ({box.x}, {box.y})
+                    {box.global_order} / L{box.line_index}.{box.order_in_line}
                   </td>
-                  <td className="px-4 py-3 text-xs" style={{ color: '#94a3b8' }}>
-                    {box.width} × {box.height}
-                  </td>
-                  <td className="px-4 py-3 text-xs" style={{ color: '#64748b' }}>
-                    {box.area?.toLocaleString()} px²
-                  </td>
+                  <td className="px-4 py-3 font-mono text-xs" style={{ color: '#94a3b8' }}>{box.x}, {box.y}, {box.width}, {box.height}</td>
+                  <td className="px-4 py-3 text-xs" style={{ color: '#94a3b8' }}>{box.area}</td>
+                  <td className="px-4 py-3 text-xs" style={{ color: '#94a3b8' }}>{Number(box.aspect_ratio || 0).toFixed(3)}</td>
+                  <td className="px-4 py-3 text-xs" style={{ color: '#94a3b8' }}>{Number(box.fill_ratio || 0).toFixed(3)}</td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-14 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
-                        <div
-                          className="h-full rounded-full transition-all"
-                          style={{ width: `${box.confidence * 100}%`, background: conf.bar }}
-                        />
-                      </div>
-                      <span className="text-xs font-bold" style={{ color: conf.text }}>
-                        {(box.confidence * 100).toFixed(0)}%
-                      </span>
-                      <span
-                        className="text-[9px] font-bold px-1.5 py-0.5 rounded-md"
-                        style={{ background: conf.bg, color: conf.text }}
-                      >
-                        {conf.label}
-                      </span>
-                    </div>
+                    <span className="text-[10px] font-bold px-2 py-1 rounded-full" style={{ color: style.color, background: style.bg, border: `1px solid ${style.border}` }}>
+                      {box.status}
+                    </span>
                   </td>
-                  <td className="px-4 py-3 text-center">
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        maxLength={1}
-                        value={displayLabel}
-                        onChange={(e) => setCustomLabels({ ...customLabels, [box.index]: e.target.value })}
-                        className="w-9 text-center font-black text-base rounded-lg py-1 outline-none"
-                        style={{ background: 'rgba(13,148,136,0.15)', color: '#2dd4bf', border: '2px solid #2dd4bf' }}
-                        autoFocus
-                      />
-                    ) : (
-                      <span
-                        className="inline-flex items-center justify-center w-9 h-9 rounded-xl font-black text-lg"
-                        style={{
-                          background: isEdited ? 'rgba(234,179,8,0.15)' : 'rgba(56,189,248,0.1)',
-                          color: isEdited ? '#fde047' : '#e2e8f0',
-                          border: `1px solid ${isEdited ? 'rgba(234,179,8,0.3)' : 'rgba(56,189,248,0.2)'}`,
-                        }}
-                      >
-                        {displayLabel}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <button
-                      onClick={() => setEditingIndex(isEditing ? null : box.index)}
-                      className="text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-all"
-                      style={{
-                        background: isEditing ? 'rgba(45,212,191,0.15)' : 'rgba(56,189,248,0.08)',
-                        color: isEditing ? '#2dd4bf' : '#64748b',
-                      }}
-                    >
-                      {isEditing ? '✓ Lưu' : 'Sửa nhãn'}
-                    </button>
-                  </td>
+                  <td className="px-4 py-3 text-xs" style={{ color: '#64748b' }}>{box.source_branch || 'main'}</td>
+                  <td className="px-4 py-3 text-xs" style={{ color: '#64748b' }}>{box.crop_url || ''}</td>
                 </tr>
               );
             })}
@@ -171,17 +120,20 @@ const BoundingBoxTable = ({ boxes }) => {
         </table>
       </div>
 
-      {/* Footer */}
-      <div className="px-5 py-3 flex items-center justify-between" style={{ borderTop: '1px solid rgba(56,189,248,0.08)' }}>
-        <p className="text-[11px]" style={{ color: '#475569' }}>
-          Kết quả CNN — Nhãn đã sửa:{' '}
-          <span style={{ color: '#fde047' }}>{Object.keys(customLabels).length}</span>
-        </p>
-        <p className="text-[11px]" style={{ color: '#2dd4bf' }}>
-          Avg confidence:{' '}
-          {(defaultBoxes.reduce((s, b) => s + b.confidence, 0) / defaultBoxes.length * 100).toFixed(1)}%
-        </p>
-      </div>
+      {!filtered.length && (
+        <div className="py-12 text-center">
+          <p className="font-bold text-slate-400">Không có bbox ứng viên</p>
+          <p className="text-xs mt-1" style={{ color: '#64748b' }}>Thử adaptive/Sauvola, giảm min_area, hoặc bật multi-branch.</p>
+        </div>
+      )}
+
+      {preview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6" style={{ background: 'rgba(0,0,0,0.72)' }} onClick={() => setPreview(null)}>
+          <div className="rounded-2xl p-4" style={{ background: '#071526', border: '1px solid rgba(56,189,248,0.2)' }}>
+            <img src={preview} alt="Large crop preview" className="max-w-[80vw] max-h-[80vh] object-contain" />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
